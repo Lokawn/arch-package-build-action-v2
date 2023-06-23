@@ -1,0 +1,11 @@
+name: Arch Linux PKGBUILD builder action
+description: Builds and validates PKGBUILD definition
+
+branding:
+  icon: triangle
+  color: blue
+
+runs:
+  using: docker
+  image: docker://archlinux/archlinux:base-devel
+  entrypoint: /github/workspace/entrypoint.sh
