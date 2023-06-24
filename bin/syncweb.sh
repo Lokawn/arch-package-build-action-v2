@@ -17,7 +17,6 @@ add_sfhost() {
         check_sfhost
     fi
     chmod -v 0600 "/home/runner/.ssh/known_hosts" &> $DEBUG_OFF
-    cat "/home/runner/.ssh/known_hosts" &> $DEBUG_OFF
 }
 
 addkey() {
@@ -35,7 +34,7 @@ addkey() {
 }
 
 rsyncfiles() {
-    rsync -a --remove-source-files -e "ssh -o 'PasswordAuthentication no' -v" "$1" "$2" &> $DEBUG_OFF
+    rsync -a --remove-source-files -e "ssh -o 'PasswordAuthentication no' -o 'UserKnownHostsFile /home/runner/.ssh/known_hosts' -v" "$1" "$2" &> $DEBUG_OFF
 }
 
 add_sfhost
