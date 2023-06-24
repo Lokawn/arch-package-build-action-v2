@@ -2,21 +2,21 @@
 [[ -d "/home/runner/.ssh/" ]] || mkdir -vp "/home/runner/.ssh/" &> $DEBUG_OFF
 
 check_sfhost() {
-    if ! grep -Fxq "$HOST" "/home/runner/.ssh/known_hosts"
+    if ! grep -Fxq "$HOST" "/home/runner/.ssh/known_hosts2"
     then
-        echo "$HOST" | tee -a "/home/runner/.ssh/known_hosts" &> /dev/null
+        echo "$HOST" | tee -a "/home/runner/.ssh/known_hosts2" &> /dev/null
     fi
 }
 
 add_sfhost() {
-    if [[ -f "/home/runner/.ssh/known_hosts" ]]
+    if [[ -f "/home/runner/.ssh/known_hosts2" ]]
     then
         check_sfhost
     else
-        touch "/home/runner/.ssh/known_hosts"
+        touch "/home/runner/.ssh/known_hosts2"
         check_sfhost
     fi
-    chmod -v 0600 "/home/runner/.ssh/known_hosts" &> $DEBUG_OFF
+    chmod -v 0600 "/home/runner/.ssh/known_hosts2" &> $DEBUG_OFF
 }
 
 addkey() {
