@@ -16,7 +16,8 @@ add_sfhost() {
         touch "/home/runner/.ssh/known_hosts2"
         check_sfhost
     fi
-    chmod -v 0600 "/home/runner/.ssh/known_hosts2" &> $DEBUG_OFF
+    cp -f "/home/runner/.ssh/known_hosts2" "/home/runner/.ssh/known_hosts" &> $DEBUG_OFF
+    chmod -v 0600 "/home/runner/.ssh/known_hosts2" "/home/runner/.ssh/known_hosts" &> $DEBUG_OFF
 }
 
 addkey() {
