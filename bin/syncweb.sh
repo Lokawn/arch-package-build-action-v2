@@ -2,22 +2,21 @@
 [[ -d "/home/runner/.ssh/" ]] || mkdir -vp "/home/runner/.ssh/" &> $DEBUG_OFF
 
 check_sfhost() {
-    if ! grep -Fxq "$HOST" "/home/runner/.ssh/known_hosts2"
+    if ! grep -Fxq "$HOST" "/home/runner/.ssh/known_hosts"
     then
-        echo "$HOST" | tee -a "/home/runner/.ssh/known_hosts2" &> /dev/null
+        echo "$HOST" | tee -a "/home/runner/.ssh/known_hosts" &> /dev/null
     fi
 }
 
 add_sfhost() {
-    if [[ -f "/home/runner/.ssh/known_hosts2" ]]
+    if [[ -f "/home/runner/.ssh/known_hosts" ]]
     then
         check_sfhost
     else
-        touch "/home/runner/.ssh/known_hosts2"
+        touch "/home/runner/.ssh/known_hosts"
         check_sfhost
     fi
-    cp -f "/home/runner/.ssh/known_hosts2" "/home/runner/.ssh/known_hosts" &> $DEBUG_OFF
-    chmod -v 0600 "/home/runner/.ssh/known_hosts2" "/home/runner/.ssh/known_hosts" &> $DEBUG_OFF
+    chmod -v 0600 "/home/runner/.ssh/known_hosts" &> $DEBUG_OFF
 }
 
 addkey() {
@@ -35,7 +34,7 @@ addkey() {
 }
 
 rsyncfiles() {
-    rsync -a --remove-source-files -e "ssh -o 'PasswordAuthentication no' -o 'UserKnownHostsFile /home/runner/.ssh/known_hosts' -v" "$1" "$2" &> $DEBUG_OFF
+    rsync -a --remove-source-files -e "ssh -v -i /home/runner/.ssh/id_ed25519" "$1" "$2" &> $DEBUG_OFF
 }
 
 add_sfhost
