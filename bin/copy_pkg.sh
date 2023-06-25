@@ -22,7 +22,7 @@ seg_pkg_files() {
     echo "::group::Delete unneeded files from PKGDIR."
 
     while read -r pkg && [[ -n $pkg ]] || [[ -n $pkg ]]; do
-    if compgen -G "${pkg}"*.zst &> $DEBUG_OFF; then
+    if compgen -G "$GITHUB_WORKSPACE/pkgdir/${pkg}"[0-9]*.zst &> $DEBUG_OFF; then
         find "$GITHUB_WORKSPACE/pkgdir/" -name "${pkg}*" -delete
         echo -e "\e[1;33m${pkg} to be updated.\e[0m"
     else
