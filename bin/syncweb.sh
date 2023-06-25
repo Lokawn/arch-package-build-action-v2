@@ -34,7 +34,7 @@ addkey() {
 }
 
 rsyncfiles() {
-    rsync -a --remove-source-files -e "ssh -v -i /home/runner/.ssh/id_ed25519" "$1" "$2" &> $DEBUG_OFF
+    rsync -a --delete -e "ssh -v -i /home/runner/.ssh/id_ed25519" "$1" "$2" &> $DEBUG_OFF
 }
 
 add_sfhost

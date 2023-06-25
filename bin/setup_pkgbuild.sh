@@ -1,3 +1,17 @@
+## Function list
+#1. env_failed
+#2. initial_setup - used in final_setup
+#3. create_srcinfo - used in final_setup
+#4. import_public_keys - used in final_setup
+#5. create_dependency_list - used in final_setup
+#6. final_setup
+#7. seg_aur
+#8. install_dependencies
+#9. namcap_pkg
+#10. pkg_info
+#11. pkg_files
+#12. build_pkg
+
 # In case environment preparation fails run this function.
 env_failed() {
     # Delete entry "${1}" from pkglist "${2}"
@@ -183,7 +197,7 @@ install_dependencies() {
         for alldeps in namcap git diff auditd; do
             if ! command -v "${alldeps}" &> $DEBUG_OFF
             then
-                echo -e "${RED_COLOR}${BOLD_TEXT}${alldeps} not in $PATH - aborting.${UNSET_COLOR}"
+                echo -e "${RED_COLOR}${BOLD_TEXT}${alldeps} not in '$PATH' - aborting.${UNSET_COLOR}"
                 exit 1
             fi
         done
@@ -256,13 +270,6 @@ build_pkg() {
                     fi
                 done
             done < "${pkgbuild_dir}/${PKGNAME}_deps_aur_installable.txt"
-        fi
-
-        if ! namcap PKGBUILD |& sudo -u buildd \
-            tee "/github/workspace/logdir/namcap_PKGBUILD_${PKGNAME}.log" &> $DEBUG_OFF
-        then
-            echo -e "${ORANGE_COLOR}namcap PKGBUILD failed.${UNSET_COLOR}"
-            continue
         fi
 
         if echo -e "${GREEN_COLOR}${BOLD_TEXT}Building ${PKGNAME}.${UNSET_COLOR}" && \

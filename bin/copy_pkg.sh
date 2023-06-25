@@ -6,14 +6,14 @@ copy_pkg_files() {
 
     for i in $GITHUB_WORKSPACE/repo/x86_64/*.zst
     do
-        [[ -e ${i}.sig ]] || rm -rvf "$i"; continue
+        [[ ! -e "${i}.sig" ]] && rm -rvf "$i" && continue
         cp -v "$i" "${GITHUB_WORKSPACE}/pkgdir/" &> $DEBUG_OFF
         if [[ -n "$ENABLE_DEBUG" && "$ENABLE_DEBUG" = false \
           || -z "$ENABLE_DEBUG" ]]; then
             echo -e "\e[0;34mCopied ${i##*repo*/} to ${GITHUB_WORKSPACE}/pkgdir.\e[0m"
         fi
     done
-
+    echo "Options +Indexes" > "$GITHUB_WORKSPACE/repo/.htaccess" &> $DEBUG_OFF
     echo "::endgroup::"
 }
 
