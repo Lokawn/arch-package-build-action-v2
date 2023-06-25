@@ -95,16 +95,15 @@ create_dependency_list() {
         then
             echo -e "${ORANGE_COLOR}\"$(xargs<\
                 "${pkgbuild_dir}/${PKGNAME}_deps_aur_installable.txt")\" aur packages PKGBUILD in source directory.${UNSET_COLOR}"
-        fi
-
-        rm -vf "/tmp/${PKGNAME}_deps_aur.txt" &> $DEBUG_OFF
 
             # Since column 2 should not contain any unique lines "-3" is used.
             # Only print lines unique to column 1.
-        comm -3 <(sort "/tmp/${PKGNAME}_deps.bak") <(sort "${pkgbuild_dir}/${PKGNAME}_deps_aur_installable.txt") \
-            | tee "/tmp/${PKGNAME}_deps.txt" &> $DEBUG_OFF
+            comm -3 <(sort "/tmp/${PKGNAME}_deps.bak") <(sort "${pkgbuild_dir}/${PKGNAME}_deps_aur_installable.txt") \
+                | tee "/tmp/${PKGNAME}_deps.txt" &> $DEBUG_OFF
+        fi
 
-        rm -vf "/tmp/${PKGNAME}_deps.bak" &> $DEBUG_OFF
+        rm -vf "/tmp/${PKGNAME}_deps_aur.txt" "/tmp/${PKGNAME}_deps.bak" &> $DEBUG_OFF
+
     fi
 }
 
@@ -149,13 +148,15 @@ seg_aur() {
         | tee "/tmp/pkg_deps_aur.log" &> $DEBUG_OFF
 
     if [[ -s "/tmp/pkg_deps_aur.log" ]]; then
+        cp "/tmp/pkg_deps_aur.log" "/tmp/pkg_deps_aur.log.bak" &> $DEBUG_OFF
         while read -r CHECKPKG && [[ -n $CHECKPKG ]] || [[ -n $CHECKPKG ]]
         do
             if pacman -S --noconfirm "${PKGNAME}" &> $DEBUG_OFF
             then
                 env_failed "${PKGNAME}" /tmp/pkg_deps_aur.log || continue
             fi
-        done < "/tmp/pkg_deps_aur.log"
+        done < "/tmp/pkg_deps_aur.log.bak"
+        rm -vf "/tmp/pkg_deps_aur.log.bak" &> $DEBUG_OFF
     fi
 
     if [[ -s "/tmp/pkg_deps_aur.log" ]]; then
@@ -240,7 +241,7 @@ build_pkg() {
 
         if [[ -s "${pkgbuild_dir}/${PKGNAME}_deps_aur_installable.txt" ]]
         then
-            while read -r aurdep || [[ -n "${aurdep}" ]]
+            while read -r aurdep  && [[ -n "${aurdep}" ]] || [[ -n "${aurdep}" ]]
             do
                 for aurdeppkg in '/github/workspace/pkgdir/'"${aurdep}"-*"${PKGEXT}"
                 do

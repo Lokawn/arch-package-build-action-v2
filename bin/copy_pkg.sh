@@ -4,7 +4,7 @@ mkdir -vp "$GITHUB_WORKSPACE"/{pkgdir,logdir} &> $DEBUG_OFF
 copy_pkg_files() {
     echo "::group::Copying package files from previous remote to PKGDIR."
 
-    for i in $GITHUB_WORKSPACE/repo/x86_64/*.zst*
+    for i in $GITHUB_WORKSPACE/repo/x86_64/*.zst
     do
         [[ -e ${i}.sig ]] || rm -rvf "$i"; continue
         cp -v "$i" "${GITHUB_WORKSPACE}/pkgdir/" &> $DEBUG_OFF
