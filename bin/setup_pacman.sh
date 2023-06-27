@@ -7,7 +7,6 @@ pacman-key --init --verbose &> $DEBUG_OFF
 pacman-key --populate --verbose archlinux &> $DEBUG_OFF
 
 cat<<EOF>/etc/pacman.d/mirrorlist
-Server = https://mirror.i3d.net/pub/archlinux/
 Server = https://mirror.pit.teraswitch.com/archlinux/
 Server = https://archlinux.mirror.net.in/archlinux/
 EOF
