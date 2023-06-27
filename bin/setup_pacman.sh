@@ -5,6 +5,13 @@ if [[ -n "$ENABLE_DEBUG" && "$ENABLE_DEBUG" = true ]]; then
 fi
 pacman-key --init --verbose &> $DEBUG_OFF
 pacman-key --populate --verbose archlinux &> $DEBUG_OFF
+
+cat<<EOF>/etc/pacman.d/mirrorlist
+Server = https://mirror.i3d.net/pub/archlinux/
+Server = https://mirror.pit.teraswitch.com/archlinux/
+Server = https://archlinux.mirror.net.in/archlinux/
+EOF
+
 pacman -Sy &> $DEBUG_OFF # just to remove warning.
 
 if [[ -n "$ENABLE_DEBUG" && "$ENABLE_DEBUG" = true ]]; then
