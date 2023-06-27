@@ -97,12 +97,22 @@ create_dependency_list() {
     then
         cp -v "/tmp/${PKGNAME}_deps.txt" "/tmp/${PKGNAME}_deps.bak" &> $DEBUG_OFF
 
-        while read -r aurdep || [[ -n "${aurdep}" ]]
+        while read -r aurdep && [[ -n "${aurdep}" ]] || [[ -n "${aurdep}" ]]
         do
-            if [[ -d "/github/workspace/pkgs/${aurdep}" ]]
+            if [[ grep -v "${aurdep}" "/github/workspace/pkglist" &> $DEBUG_OFF ]] && [[ -d "/github/workspace/pkgs/${aurdep}" ]]
             then
+                local aur_lineno pkg_lineno
+                aur_lineno=$(grep -n "${aurdep}" "/github/workspace/pkglist" | cut -d ":" -f1)
+                pkg_lineno=$(grep -n "${PKGNAME}" "/github/workspace/pkglist" | cut -d ":" -f1)
+                if [[ "$aur_lineno" < "$pkg_lineno" ]]
+                then
+                    cp -vf /github/workspace/pkglist /github/workspace/pkglist.bak &> $DEBUG_OFF
+                    grep -fxv "${aur_lineno}" "/github/workspace/pkglist.bak" | tee "${2}" &> $DEBUG_OFF
+                    echo "${aurdep}" | tee -a "/github/workspace/pkglist" &> $DEBUG_OFF
+                fi
                 echo "${aurdep}" >> "${pkgbuild_dir}/${PKGNAME}_deps_aur_installable.txt"
             fi
+            unset aurdep
         done < "/tmp/${PKGNAME}_deps_aur.txt"
 
         if [[ -s "${pkgbuild_dir}/${PKGNAME}_deps_aur_installable.txt" ]]
@@ -169,6 +179,7 @@ seg_aur() {
             then
                 env_failed "${PKGNAME}" /tmp/pkg_deps_aur.log || continue
             fi
+            unset CHECKPKG
         done < "/tmp/pkg_deps_aur.log.bak"
         rm -vf "/tmp/pkg_deps_aur.log.bak" &> $DEBUG_OFF
     fi
@@ -244,7 +255,7 @@ build_pkg() {
     # https://www.shellcheck.net/wiki/SC2013
     #for PKGNAME in $(cat /github/workspace/pkglist)
 
-    while read -r PKGNAME && [[ -n $PKGNAME ]]  || [[ -n $PKGNAME ]]
+    while read -r PKGNAME && [[ -n $PKGNAME ]] || [[ -n $PKGNAME ]]
     do
         echo -e "::group::${GREEN_COLOR}${BOLD_TEXT}Packaging ${PKGNAME}.${UNSET_COLOR}"
 
@@ -255,7 +266,7 @@ build_pkg() {
 
         if [[ -s "${pkgbuild_dir}/${PKGNAME}_deps_aur_installable.txt" ]]
         then
-            while read -r aurdep  && [[ -n "${aurdep}" ]] || [[ -n "${aurdep}" ]]
+            while read -r aurdep && [[ -n "${aurdep}" ]] || [[ -n "${aurdep}" ]]
             do
                 for aurdeppkg in '/github/workspace/pkgdir/'"${aurdep}"-*"${PKGEXT}"
                 do
@@ -269,6 +280,7 @@ build_pkg() {
                         continue
                     fi
                 done
+                unset aurdep
             done < "${pkgbuild_dir}/${PKGNAME}_deps_aur_installable.txt"
         fi
 
