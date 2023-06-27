@@ -7,8 +7,7 @@ pacman-key --init --verbose &> $DEBUG_OFF
 pacman-key --populate --verbose archlinux &> $DEBUG_OFF
 
 cat<<EOF>/etc/pacman.d/mirrorlist
-Server = https://mirror.pit.teraswitch.com/archlinux/
-Server = https://archlinux.mirror.net.in/archlinux/
+Server = https://mirror.rackspace.com/archlinux/$repo/os/$arch
 EOF
 
 pacman -Sy &> $DEBUG_OFF # just to remove warning.
