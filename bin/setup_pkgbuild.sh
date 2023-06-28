@@ -139,6 +139,8 @@ final_setup() {
     # https://www.shellcheck.net/wiki/SC2013
     #for PKGNAME in $(cat /github/workspace/pkglist)
 
+    cat "/github/workspace/pkglist" &> $DEBUG_OFF
+
     while read -r PKGNAME && [[ -n $PKGNAME ]] || [[ -n $PKGNAME ]]
     do
         echo -e "::group::${GREEN_COLOR}${BOLD_TEXT}Preparing env to build ${PKGNAME}.${UNSET_COLOR}"
@@ -161,6 +163,8 @@ final_setup() {
         echo "::endgroup::"
         cat "/tmp/${PKGNAME}_deps.txt" >> "/tmp/pkg_deps_assorted.txt"
         unset PKGNAME
+
+        cat "/github/workspace/pkglist" &> $DEBUG_OFF
 
     done < "/github/workspace/pkglist"
 }
