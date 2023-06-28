@@ -162,7 +162,7 @@ final_setup() {
 
         echo "::endgroup::"
         cat "/tmp/${PKGNAME}_deps.txt" >> "/tmp/pkg_deps_assorted.txt"
-        unset PKGNAME
+        unset PKGNAME && echo "$PKGNAME"
 
         cat "/github/workspace/pkglist" &> $DEBUG_OFF
 
