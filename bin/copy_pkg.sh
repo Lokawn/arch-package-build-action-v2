@@ -9,8 +9,8 @@ copy_pkg_files() {
         local app_name package_file
         package_file=${i##*repo*/}
         app_name=${package_file%%-[0-9]*}
-        [[ ! -e "${i}.sig" ]] && rm -rvf "$i" &> $DEBUG_OFF && echo -e "\e[1;33mSignature for ${app_name} not found, package file removed.\e[0m" && continue
-        cp -v "$i" "${GITHUB_WORKSPACE}/pkgdir/" &> $DEBUG_OFF
+        [[ ! -e "${i}.sig" ]] && rm -rvf "$i" &> $DEBUG_OFF && echo -e "\e[1;33mSignature for ${app_name} not found, package file removed.\e[0m" && if [[ -d "${GITHUB_WORKSPACE}/pkgs/${app_name}" ]]; then echo ${app_name} | tee -a "${GITHUB_WORKSPACE}/pkglist"; fi && continue
+        cp -v "$i"{,.sig} "${GITHUB_WORKSPACE}/pkgdir/" &> $DEBUG_OFF
         if [[ -n "$ENABLE_DEBUG" && "$ENABLE_DEBUG" = false \
           || -z "$ENABLE_DEBUG" ]]; then
             echo -e "\e[0;34mCopied ${package_file} to '${GITHUB_WORKSPACE}/pkgdir'.\e[0m"
