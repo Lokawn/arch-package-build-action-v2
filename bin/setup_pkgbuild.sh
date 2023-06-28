@@ -107,8 +107,8 @@ create_dependency_list() {
                 if [[ "$aur_lineno" < "$pkg_lineno" ]]
                 then
                     cp -vf /github/workspace/pkglist /github/workspace/pkglist.bak &> $DEBUG_OFF
-                    grep -xv "${aur_lineno}" "/github/workspace/pkglist.bak" | tee "/github/workspace/pkglist" &> $DEBUG_OFF
-                    echo "${aurdep}" | tee -a "/github/workspace/pkglist" &> $DEBUG_OFF
+                    grep -xv "${PKGNAME}" "/github/workspace/pkglist.bak" | tee "/github/workspace/pkglist" &> $DEBUG_OFF
+                    echo "${PKGNAME}" | tee -a "/github/workspace/pkglist" &> $DEBUG_OFF
                 fi
                 echo "${aurdep}" >> "${pkgbuild_dir}/${PKGNAME}_deps_aur_installable.txt"
             fi
