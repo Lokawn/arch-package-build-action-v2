@@ -9,3 +9,4 @@ runs:
   using: docker
   image: docker://archlinux/archlinux:base-devel
   entrypoint: /github/workspace/entrypoint.sh
+  opts: "--network=host"
