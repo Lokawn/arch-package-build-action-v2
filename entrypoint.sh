@@ -8,12 +8,6 @@ PATH=$PATH:/github/workspace/action/bin/
 source "/github/workspace/action/bin/set_debug.sh"
 source "/github/workspace/action/bin/set_color.sh"
 
-if ! ping -c 1 google.com &> $DEBUG_OFF
-then
-    echo -e "${ORANGE_COLOR}${BOLD_TEXT}Unable to connect to web - aborting.${UNSET_COLOR}"
-    exit 1
-fi
-
 check_exist /github/workspace/action/config/{makepkg.conf,pacman.conf}
 
 mv -vf /github/workspace/action/config/{makepkg.conf,pacman.conf} /etc/  &> $DEBUG_OFF
