@@ -34,11 +34,16 @@ cat "/github/workspace/pkglist" &> $DEBUG_OFF
 
 # setup_pkgbuild.sh
 final_setup
+
+cat "/github/workspace/pkglist" &> $DEBUG_OFF
+
 seg_aur
 
 for i in {1..5}
 do install_dependencies && break || sleep 5
 done
+
+cat "/github/workspace/pkglist" &> $DEBUG_OFF
 
 build_pkg
 
