@@ -34,7 +34,11 @@ fi
 # setup_pkgbuild.sh
 final_setup
 seg_aur
-install_dependencies
+
+for i in {1..5}
+do install_dependencies && break || sleep 5
+done
+
 build_pkg
 
 # setup_repo.sh
