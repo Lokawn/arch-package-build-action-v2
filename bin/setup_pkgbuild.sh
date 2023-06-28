@@ -19,7 +19,6 @@ env_failed() {
     grep -xv "${1}" "${2}.bak" > "${2}"
     rm -vf "${2}.bak" &> $DEBUG_OFF
     echo -e "${ORANGE_COLOR}${BOLD_TEXT}Failed to build ${1} - skipping.${UNSET_COLOR}"
-    return 1
     # The continue statement skips the remaining commands inside the body of
     # the enclosing loop for the current iteration and passes program control
     # to the next iteration of the loop.
@@ -29,12 +28,12 @@ env_failed() {
 initial_setup() {
     if [[ ! -d "${pkgbuild_dir}" ]]; then
         echo -e "${ORANGE_COLOR}${BOLD_TEXT}${pkgbuild_dir} should be a directory.${UNSET_COLOR}"
-        env_failed "${PKGNAME}" /github/workspace/pkglist
+        env_failed "${PKGNAME}" /github/workspace/pkglist && return 1
     fi
 
     if [[ ! -e "${pkgbuild_dir}/PKGBUILD" ]]; then
         echo -e "${ORANGE_COLOR}${BOLD_TEXT}${pkgbuild_dir} does not contain a PKGBUILD file.${UNSET_COLOR}"
-        env_failed "${PKGNAME}" /github/workspace/pkglist
+        env_failed "${PKGNAME}" /github/workspace/pkglist && return 1
     fi
 }
 
@@ -43,8 +42,8 @@ create_srcinfo() {
     if ! sudo -u buildd makepkg --printsrcinfo \
         | sudo -u buildd tee .SRCINFO
     then
-        echo -e "${ORANGE_COLOR}makepkg --printsrcinfo: ${PKGNAME}/.SRCINFO failed.${UNSET_COLOR}"
-        env_failed "${PKGNAME}" /github/workspace/pkglist
+        echo -e "${ORANGE_COLOR}makepkg --printsrcinfo: ${PKGNAME}/.SRCINFO failed - skipping.${UNSET_COLOR}"
+        env_failed "${PKGNAME}" /github/workspace/pkglist && return 1
     fi
 }
 
@@ -67,8 +66,8 @@ import_public_keys() {
                         's/.*validpgpkeys = //' -e 's/:.*//' | xargs sudo -u \
                             buildd gpg --recv-keys &> $DEBUG_OFF
                     then
-                        echo -e "${ORANGE_COLOR}gpg public keys lookup & import failed for ${PKGNAME}.${UNSET_COLOR}"
-                        env_failed "${PKGNAME}" /github/workspace/pkglist
+                        echo -e "${ORANGE_COLOR}gpg public keys lookup & import failed for ${PKGNAME} - skipping.${UNSET_COLOR}"
+                        env_failed "${PKGNAME}" /github/workspace/pkglist && return 1
                     fi
                 fi
             done
@@ -76,8 +75,8 @@ import_public_keys() {
                 's/.*validpgpkeys = //' -e 's/:.*//' | xargs sudo -u \
                     buildd gpg --recv-keys &> $DEBUG_OFF
         then # exit status can be variable depending upon gpg.
-            echo -e "${ORANGE_COLOR}gpg public keys lookup & import failed for ${PKGNAME}.${UNSET_COLOR}"
-            env_failed "${PKGNAME}" /github/workspace/pkglist
+            echo -e "${ORANGE_COLOR}gpg public keys lookup & import failed for ${PKGNAME} - skipping.${UNSET_COLOR}"
+            env_failed "${PKGNAME}" /github/workspace/pkglist && return 1
         fi
     fi
     # exit status 1 means there are no validpgpkeys to import, so function will not execute.
@@ -86,47 +85,67 @@ import_public_keys() {
 
 create_dependency_list() {
         # https://www.shellcheck.net/wiki/SC2024 - sudo doesn't affect redirects
-    grep -E 'depends' .SRCINFO | sed -e 's/.*depends = //' -e 's/:.*//' \
+    grep -E 'depends' .SRCINFO | sed -e 's/.*depends = //' -e 's/:.*//' -e 's/[<..>]=[0-9].*//g' -e 's/=[0-9].*//g' \
         | tee -a "/tmp/${PKGNAME}_deps.txt" &> $DEBUG_OFF
+        # "/tmp/${PKGNAME}_deps.txt" here contains all package dependencies.
 
         # Only print lines unique to column 2.
     comm -13 <(pacman -Slq | sort) <(sort "/tmp/${PKGNAME}_deps.txt") \
         | tee "/tmp/${PKGNAME}_deps_aur.txt" &> $DEBUG_OFF
+        # "/tmp/${PKGNAME}_deps_aur.txt" contains dependencies not in repositories.
 
     if [[ -s "/tmp/${PKGNAME}_deps_aur.txt" ]]
     then
         cp -v "/tmp/${PKGNAME}_deps.txt" "/tmp/${PKGNAME}_deps.bak" &> $DEBUG_OFF
+        cp -v "/tmp/${PKGNAME}_deps_aur.txt" "/tmp/${PKGNAME}_deps_aur.bak" &> $DEBUG_OFF
+
+        comm -23 <(sort "/tmp/${PKGNAME}_deps.bak") <(sort "${pkgbuild_dir}/${PKGNAME}_deps_aur.txt") \
+            | tee "/tmp/${PKGNAME}_deps.txt" &> $DEBUG_OFF
+            # "/tmp/${PKGNAME}_deps.txt" contains only packages present in repositories.
 
         while read -r aurdep && [[ -n "${aurdep}" ]] || [[ -n "${aurdep}" ]]
         do
-            if [[ $(grep -v "${aurdep}" "/github/workspace/pkglist" &> $DEBUG_OFF; echo $?) ]] && [[ -d "/github/workspace/pkgs/${aurdep}" ]]
+            if [[ ! $(grep -v "$aurdep" "/tmp/${PKGNAME}_deps_aur.txt" &> $DEBUG_OFF; echo $?) ]]
             then
-                local aur_lineno pkg_lineno
-                aur_lineno=$(grep -n "${aurdep}" "/github/workspace/pkglist" | cut -d ":" -f1)
-                pkg_lineno=$(grep -n "${PKGNAME}" "/github/workspace/pkglist" | cut -d ":" -f1)
-                if [[ "$aur_lineno" < "$pkg_lineno" ]]
-                then
-                    cp -vf /github/workspace/pkglist /github/workspace/pkglist.bak &> $DEBUG_OFF
-                    grep -xv "${PKGNAME}" "/github/workspace/pkglist.bak" | tee "/github/workspace/pkglist" &> $DEBUG_OFF
-                    echo "${PKGNAME}" | tee -a "/github/workspace/pkglist" &> $DEBUG_OFF
-                fi
-                echo "${aurdep}" >> "${pkgbuild_dir}/${PKGNAME}_deps_aur_installable.txt"
+                continue
             fi
+
+            if [[ -d "/github/workspace/pkgs/${aurdep}" ]]; then
+                if [[ $(grep -v "${aurdep}" "/github/workspace/pkglist" &> $DEBUG_OFF; echo $?) ]]
+                then
+                    local aur_lineno pkg_lineno
+                    aur_lineno=$(grep -n "${aurdep}" "/github/workspace/pkglist" | cut -d ":" -f1)
+                    pkg_lineno=$(grep -n "${PKGNAME}" "/github/workspace/pkglist" | cut -d ":" -f1)
+                    if [[ "$aur_lineno" < "$pkg_lineno" ]]
+                    then
+                        cp -vf /github/workspace/pkglist /github/workspace/pkglist.bak &> $DEBUG_OFF
+                        grep -xv "${PKGNAME}" "/github/workspace/pkglist.bak" | tee "/github/workspace/pkglist" &> $DEBUG_OFF
+                        echo "${PKGNAME}" | tee -a "/github/workspace/pkglist" &> $DEBUG_OFF
+                    fi
+                    echo "${aurdep}" >> "${pkgbuild_dir}/${PKGNAME}_deps_aur_installable.txt"
+                    # "${pkgbuild_dir}/${PKGNAME}_deps_aur_installable.txt" conatins locally available dependencies.
+                elif compgen -G "/github/workspace/pkgdir/${aurdep}-*${PKGEXT}" &> $DEBUG_OFF
+                then
+                    echo "${aurdep}" >> "${pkgbuild_dir}/${PKGNAME}_deps_aur_installable.txt"
+                fi
+            fi
+
             unset aurdep
         done < "/tmp/${PKGNAME}_deps_aur.txt"
 
         if [[ -s "${pkgbuild_dir}/${PKGNAME}_deps_aur_installable.txt" ]]
         then
             echo -e "${ORANGE_COLOR}\"$(xargs<\
-                "${pkgbuild_dir}/${PKGNAME}_deps_aur_installable.txt")\" aur packages PKGBUILD in source directory.${UNSET_COLOR}"
+                "${pkgbuild_dir}/${PKGNAME}_deps_aur_installable.txt")\" PKGBUILD in source directory.${UNSET_COLOR}"
 
-            # Since column 2 should not contain any unique lines "-3" is used.
+            # Since column 2 should not contain any unique lines "-3" is used (so -2 not needed).
             # Only print lines unique to column 1.
-            comm -3 <(sort "/tmp/${PKGNAME}_deps.bak") <(sort "${pkgbuild_dir}/${PKGNAME}_deps_aur_installable.txt") \
-                | tee "/tmp/${PKGNAME}_deps.txt" &> $DEBUG_OFF
+            comm -3 <(sort "/tmp/${PKGNAME}_deps_aur.bak") <(sort "${pkgbuild_dir}/${PKGNAME}_deps_aur_installable.txt") \
+                | tee "/tmp/${PKGNAME}_deps_aur.txt" &> $DEBUG_OFF
+                # "/tmp/${PKGNAME}_deps_aur.txt" conatins packages neither locally available nor in repositories.
         fi
 
-        rm -vf "/tmp/${PKGNAME}_deps_aur.txt" "/tmp/${PKGNAME}_deps.bak" &> $DEBUG_OFF
+        rm -vf "/tmp/${PKGNAME}_deps_aur.bak" "/tmp/${PKGNAME}_deps.bak" &> $DEBUG_OFF
 
     fi
 }
@@ -143,9 +162,8 @@ final_setup() {
 
     while read -r PKGNAME && [[ -n $PKGNAME ]] || [[ -n $PKGNAME ]]
     do
-        if [[ $(grep -v "$PKGNAME" "/github/workspace/pkglist" &> $DEBUG_OFF; echo $?) ]]
-        then return
-        else
+        if [[ ! $(grep -v "$PKGNAME" "/github/workspace/pkglist" &> $DEBUG_OFF; echo $?) ]]
+        then
             echo -e "${ORANGE_COLOR}$PKGNAME package not found - skipping.${UNSET_COLOR}"
             continue
         fi
@@ -166,8 +184,19 @@ final_setup() {
 
         create_dependency_list
 
+        if [[ -s "/tmp/${PKGNAME}_deps_aur.txt" ]]
+        then
+                # https://unix.stackexchange.com/a/63663/444404
+            echo -e "${ORANGE_COLOR}\"$(xargs<\
+                "/github/workspace/logdir/pkg_deps_aur_sorted.log")\" not in repos, neither PKGBUILD provided.${UNSET_COLOR}"
+            echo -e "${ORANGE_COLOR}Skipping $PKGNAME.${UNSET_COLOR}"
+            env_failed "${PKGNAME}" /github/workspace/pkglist
+            continue
+        fi
+
         echo "::endgroup::"
         cat "/tmp/${PKGNAME}_deps.txt" >> "/tmp/pkg_deps_assorted.txt"
+#        cat "/tmp/${PKGNAME}_deps_aur.txt" >> "/tmp/pkg_deps_aur_assorted.txt"
         unset PKGNAME && echo "$PKGNAME"
 
         cat "/github/workspace/pkglist" &> $DEBUG_OFF
@@ -176,34 +205,30 @@ final_setup() {
 }
 
 seg_aur() {
-    comm -12 <(pacman -Slq | sort) <(sort "/tmp/pkg_deps_assorted.txt") \
-        | tee "/tmp/pkg_deps_sorted.txt" &> $DEBUG_OFF
-    comm -13 <(pacman -Slq | sort) <(sort "/tmp/pkg_deps_assorted.txt") \
-        | tee "/tmp/pkg_deps_aur.log" &> $DEBUG_OFF
+    sort "/tmp/pkg_deps_assorted.txt" | tee "/tmp/pkg_deps_sorted.txt" &> $DEBUG_OFF
+#    sort "/tmp/pkg_deps_aur_assorted.txt" | tee "/tmp/pkg_deps_aur_sorted.txt" &> $DEBUG_OFF
 
-    if [[ -s "/tmp/pkg_deps_aur.log" ]]; then
-        cp "/tmp/pkg_deps_aur.log" "/tmp/pkg_deps_aur.log.bak" &> $DEBUG_OFF
-        while read -r CHECKPKG && [[ -n $CHECKPKG ]] || [[ -n $CHECKPKG ]]
-        do
-            if pacman -S --noconfirm "${PKGNAME}" &> $DEBUG_OFF
-            then
-                env_failed "${PKGNAME}" /tmp/pkg_deps_aur.log || continue
-            fi
-            unset CHECKPKG
-        done < "/tmp/pkg_deps_aur.log.bak"
-        rm -vf "/tmp/pkg_deps_aur.log.bak" &> $DEBUG_OFF
-    fi
+#    if [[ -s "/tmp/pkg_deps_aur_sorted.txt" ]]; then
+#        cp "/tmp/pkg_deps_aur.log" "/tmp/pkg_deps_aur.log.bak" &> $DEBUG_OFF
+#        while read -r CHECKPKG && [[ -n $CHECKPKG ]] || [[ -n $CHECKPKG ]]
+#        do
+#            if pacman -S --noconfirm "${PKGNAME}" &> $DEBUG_OFF
+#            then
+#                env_failed "${PKGNAME}" /tmp/pkg_deps_aur.log && continue
+#            fi
+#            unset CHECKPKG
+#        done < "/tmp/pkg_deps_aur.log.bak"
+#        rm -vf "/tmp/pkg_deps_aur.log.bak" &> $DEBUG_OFF
+#    fi
 
-    if [[ -s "/tmp/pkg_deps_aur.log" ]]; then
-        sudo -u buildd cp -v "/tmp/pkg_deps_aur.log" \
-            "/github/workspace/logdir/pkg_deps_aur.log" &> $DEBUG_OFF
+#    if [[ -s "/tmp/pkg_deps_aur_sorted.txt" ]]; then
+#        sudo -u buildd cp -v "pkg_deps_aur_sorted.txt" \
+#            "/github/workspace/logdir/pkg_deps_aur_sorted.log" &> $DEBUG_OFF
 
-            # https://unix.stackexchange.com/a/63663/444404
-        echo -e "${ORANGE_COLOR}\"$(xargs<\
-        "/github/workspace/logdir/pkg_deps_aur.log")\" not in repos, neither PKGBUILD provided.${UNSET_COLOR}"
             # SC2145: Argument mixes string and array. Use * or separate argument.
             # https://www.shellcheck.net/wiki/SC2145
-    fi
+
+#   fi
 }
 
 # Install dependencies for all packages in one go.
@@ -285,15 +310,9 @@ build_pkg() {
             do
                 for aurdeppkg in '/github/workspace/pkgdir/'"${aurdep}"-*"${PKGEXT}"
                 do
-                    if [[ -f "${aurdeppkg}" ]]
-                    then
-                        echo -e "${ORANGE_COLOR}Installing ${aurdep}.${UNSET_COLOR}"
-                        pacman -Uv --noconfirm "${aurdeppkg}" \
-                            |& sudo -u buildd tee "/github/workspace/logdir/pacman.log" &> $DEBUG_OFF
-                    else
-                        echo -e "${ORANGE_COLOR}AUR Dependency Package not found - skipping.${UNSET_COLOR}"
-                        continue
-                    fi
+                    echo -e "${ORANGE_COLOR}Installing ${aurdep}.${UNSET_COLOR}"
+                    pacman -Uv --noconfirm "${aurdeppkg}" \
+                        |& sudo -u buildd tee "/github/workspace/logdir/pacman.log" &> $DEBUG_OFF
                 done
                 unset aurdep
             done < "${pkgbuild_dir}/${PKGNAME}_deps_aur_installable.txt"
@@ -317,7 +336,7 @@ build_pkg() {
                     pkg_info "${pkg}" || continue
                     pkg_files "${pkg}" || continue
                     import_sign  "${pkg}" || continue
-                    mv  -v "${pkg}"* "/github/workspace/pkgdir" &> $DEBUG_OFF
+                    mv -v "${pkg}"* "/github/workspace/pkgdir" &> $DEBUG_OFF
                     echo "Package file moved to PKGDIR."
                 else
                     echo -e "${ORANGE_COLOR}${BOLD_TEXT}Failed to build ${PKGNAME} - skipping.${UNSET_COLOR}"
