@@ -6,10 +6,10 @@ fi
 pacman-key --init --verbose &> $DEBUG_OFF
 pacman-key --populate --verbose archlinux &> $DEBUG_OFF
 
-cat<<EOF>/etc/pacman.d/mirrorlist
-Server = https://mirror.fcix.net/archlinux
-Server = https://mirror.osbeck.com/archlinux/
-EOF
+#cat<<EOF>/etc/pacman.d/mirrorlist
+#Server = https://mirror.fcix.net/archlinux
+#Server = https://mirror.osbeck.com/archlinux/
+#EOF
 
 pacman -Sy &> $DEBUG_OFF # just to remove warning.
 
