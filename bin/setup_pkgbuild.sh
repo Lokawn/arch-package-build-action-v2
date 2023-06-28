@@ -19,7 +19,7 @@ env_failed() {
     grep -xv "${1}" "${2}.bak" > "${2}"
     rm -vf "${2}.bak" &> $DEBUG_OFF
     echo -e "${ORANGE_COLOR}${BOLD_TEXT}Failed to build ${1} - skipping.${UNSET_COLOR}"
-    exit 1
+    return 1
     # The continue statement skips the remaining commands inside the body of
     # the enclosing loop for the current iteration and passes program control
     # to the next iteration of the loop.
@@ -29,12 +29,12 @@ env_failed() {
 initial_setup() {
     if [[ ! -d "${pkgbuild_dir}" ]]; then
         echo -e "${ORANGE_COLOR}${BOLD_TEXT}${pkgbuild_dir} should be a directory.${UNSET_COLOR}"
-        env_failed "${PKGNAME}" /github/workspace/pkglist || exit 1
+        env_failed "${PKGNAME}" /github/workspace/pkglist
     fi
 
     if [[ ! -e "${pkgbuild_dir}/PKGBUILD" ]]; then
         echo -e "${ORANGE_COLOR}${BOLD_TEXT}${pkgbuild_dir} does not contain a PKGBUILD file.${UNSET_COLOR}"
-        env_failed "${PKGNAME}" /github/workspace/pkglist || exit 1
+        env_failed "${PKGNAME}" /github/workspace/pkglist
     fi
 }
 
@@ -68,7 +68,7 @@ import_public_keys() {
                             buildd gpg --recv-keys &> $DEBUG_OFF
                     then
                         echo -e "${ORANGE_COLOR}gpg public keys lookup & import failed for ${PKGNAME}.${UNSET_COLOR}"
-                        env_failed "${PKGNAME}" /github/workspace/pkglist || exit 1
+                        env_failed "${PKGNAME}" /github/workspace/pkglist
                     fi
                 fi
             done
@@ -77,7 +77,7 @@ import_public_keys() {
                     buildd gpg --recv-keys &> $DEBUG_OFF
         then # exit status can be variable depending upon gpg.
             echo -e "${ORANGE_COLOR}gpg public keys lookup & import failed for ${PKGNAME}.${UNSET_COLOR}"
-            env_failed "${PKGNAME}" /github/workspace/pkglist || exit 1
+            env_failed "${PKGNAME}" /github/workspace/pkglist
         fi
     fi
     # exit status 1 means there are no validpgpkeys to import, so function will not execute.
@@ -143,6 +143,12 @@ final_setup() {
 
     while read -r PKGNAME && [[ -n $PKGNAME ]] || [[ -n $PKGNAME ]]
     do
+        if [[ $(grep -v "$PKGNAME" "/github/workspace/pkglist" &> $DEBUG_OFF; echo $?) ]]
+        then return
+        else
+            echo -e "${ORANGE_COLOR}$PKGNAME package not found - skipping.${UNSET_COLOR}"
+            continue
+        fi
         echo -e "::group::${GREEN_COLOR}${BOLD_TEXT}Preparing env to build ${PKGNAME}.${UNSET_COLOR}"
 
         # nicely cleans up path, ie.
@@ -225,7 +231,7 @@ namcap_pkg() {
         tee "/github/workspace/logdir/namcap_${PKGNAME}.log" &> $DEBUG_OFF
     then
         echo -e "${ORANGE_COLOR}${BOLD_TEXT}namcap ${1} failed - skipping.${UNSET_COLOR}"
-        exit 1
+        return 1
     fi
 }
 
@@ -261,6 +267,12 @@ build_pkg() {
 
     while read -r PKGNAME && [[ -n $PKGNAME ]] || [[ -n $PKGNAME ]]
     do
+        if [[ $(grep -v "$PKGNAME" "/github/workspace/pkglist" &> $DEBUG_OFF; echo $?) ]]
+        then return
+        else
+            echo -e "${ORANGE_COLOR}$PKGNAME package not found - skipping.${UNSET_COLOR}"
+            continue
+        fi
         echo -e "::group::${GREEN_COLOR}${BOLD_TEXT}Packaging ${PKGNAME}.${UNSET_COLOR}"
 
         pkgbuild_dir=$(readlink "/github/workspace/pkgs/${PKGNAME}" -f)
