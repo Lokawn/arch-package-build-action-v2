@@ -30,6 +30,7 @@ else
     export MAKEFLAGS
 fi
 
+cat "/github/workspace/pkglist" &> $DEBUG_OFF
 
 # setup_pkgbuild.sh
 final_setup
@@ -38,8 +39,6 @@ seg_aur
 for i in {1..5}
 do install_dependencies && break || sleep 5
 done
-
-cat "/github/workspace/pkglist" &> $DEBUG_OFF
 
 build_pkg
 
