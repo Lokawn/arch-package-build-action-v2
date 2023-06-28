@@ -267,9 +267,8 @@ build_pkg() {
 
     while read -r PKGNAME && [[ -n $PKGNAME ]] || [[ -n $PKGNAME ]]
     do
-        if [[ $(grep -v "$PKGNAME" "/github/workspace/pkglist" &> $DEBUG_OFF; echo $?) ]]
-        then return
-        else
+        if [[ ! $(grep -v "$PKGNAME" "/github/workspace/pkglist" &> $DEBUG_OFF; echo $?) ]]
+        then
             echo -e "${ORANGE_COLOR}$PKGNAME package not found - skipping.${UNSET_COLOR}"
             continue
         fi
