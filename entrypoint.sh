@@ -39,6 +39,8 @@ for i in {1..5}
 do install_dependencies && break || sleep 5
 done
 
+cat "/github/workspace/pkglist" &> $DEBUG_OFF
+
 build_pkg
 
 # setup_repo.sh
