@@ -108,11 +108,11 @@ create_dependency_list() {
         current_run_aurdep=0
         while read aurdep && [[ -n "${aurdep}" ]] || [[ -n "${aurdep}" ]]
         do
-            if [[ ! $(grep -Fx "$aurdep" "/tmp/${PKGNAME}_deps_aur.txt" &> $DEBUG_OFF) ]]; then
+            if [[ ! $(grep -Fx "${aurdep}" "/tmp/${PKGNAME}_deps_aur.txt" &> $DEBUG_OFF) ]]; then
                     aurdep=$(head -n $(($current_run_aurdep + 1)) "/tmp/${PKGNAME}_deps_aur.txt" | tail -n +$(($current_run_aurdep + 1)))
             fi
 
-            if [[ $(grep -Fx "$aurdep" "/tmp/${PKGNAME}_deps_aur.txt" &> $DEBUG_OFF) ]]; then
+            if [[ $(grep -Fx "${aurdep}" "/tmp/${PKGNAME}_deps_aur.txt" &> $DEBUG_OFF) ]]; then
             add_dep_to_pkglist() {
                 local aur_lineno pkg_lineno
                 aur_lineno=$(grep -nFx "${aurdep}" "/github/workspace/pkglist" | cut -d ":" -f1)
@@ -163,6 +163,28 @@ create_dependency_list() {
 
         rm -vf "/tmp/${PKGNAME}_deps_aur.bak" "/tmp/${PKGNAME}_deps.bak" &> $DEBUG_OFF
 
+        if [[ -s "/tmp/${PKGNAME}_deps_aur.txt" ]]; then
+
+            cp -vf "/tmp/${PKGNAME}_deps_aur.txt" "/tmp/${PKGNAME}_deps_aur.bak" &> $DEBUG_OFF
+
+            current_deps_aur=0
+            while read CHECKPKG_PKG && [[ -n $CHECKPKG_PKG ]] || [[ -n $CHECKPKG_PKG ]]
+            do
+                if [[ ! $(grep -Fx "${CHECKPKG_PKG}" "/tmp/${PKGNAME}_deps_aur.bak" &> $DEBUG_OFF) ]]; then
+                    CHECKPKG_PKG=$(head -n $((current_deps_aur + 1)) "/github/workspace/pkglist" | tail -n +$((current_deps_aur + 1)))
+                fi
+                CHECKPKG_PKG="${CHECKPKG}"
+                if pacman -S --noconfirm --needed --color=never "${CHECKPKG}" |& sudo -u buildd tee "/github/workspace/logdir/pacman.log" &> $DEBUG_OFF
+                then
+                    env_failed "${CHECKPKG}" "/tmp/${PKGNAME}_deps_aur.txt"
+                else continue
+                fi
+                unset CHECKPKG CHECKPKG_PKG
+                current_deps_aur=$((current_deps_aur + 1))
+            done < "/tmp/${PKGNAME}_deps_aur.bak"
+            unset current_deps_aur
+            rm -vf "/tmp/${PKGNAME}_deps_aur.bak" &> $DEBUG_OFF
+        fi
     fi
 }
 
@@ -215,8 +237,7 @@ final_setup() {
 
             echo "::endgroup::"
             cat "/tmp/${PKGNAME}_deps.txt" | tee -a "/tmp/pkg_deps_assorted.txt"
-            unset PKGNAME && echo "${PKGNAME}"
-
+            unset PKGNAME PKGLIST_PKG_SETUP
         else
             echo -e "${ORANGE_COLOR}${PKGNAME} package not found - skipping.${UNSET_COLOR}"
             continue
@@ -264,7 +285,7 @@ seg_aur() {
 install_dependencies() {
     if ! xargs pacman -Syu --needed --noconfirm --color=never \
             namcap git audit diffutils < "/tmp/pkg_deps_sorted.txt" \
-            |& sudo -u buildd tee "/github/workspace/logdir/pacman.log" &> $DEBUG_OFF
+            |& sudo -u buildd tee -a "/github/workspace/logdir/pacman.log" &> $DEBUG_OFF
     then
         echo -e "${RED_COLOR}${BOLD_TEXT}Failed to install dependencies - aborting.${UNSET_COLOR}"
         exit 1
@@ -350,7 +371,7 @@ build_pkg() {
                     pacman -Uv --noconfirm "${aurdeppkg}" \
                         |& sudo -u buildd tee "/github/workspace/logdir/pacman.log" &> $DEBUG_OFF
                 done
-                unset aurdep
+                unset aurdep aurdeppkg
                 current_build_aurdep=$(($current_build_aurdep + 1))
             done < "/tmp/${PKGNAME}_deps_aur_installable.txt"
             unset current_build_aurdep
@@ -386,7 +407,7 @@ build_pkg() {
                 continue
             fi
             echo "::endgroup::"
-            unset PKGNAME
+            unset PKGNAME PKGLIST_PKG_BUILD
 
         else
             echo -e "${ORANGE_COLOR}$PKGNAME package not found - skipping.${UNSET_COLOR}"
