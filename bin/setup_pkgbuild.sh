@@ -171,11 +171,8 @@ final_setup() {
     while read PKGLIST_PKG_SETUP && [[ -n $PKGLIST_PKG_SETUP ]] || [[ -n $PKGLIST_PKG_SETUP ]]
     do
         PKGNAME="${PKGLIST_PKG_SETUP}"
-        if [[ ! $(grep -Fx "$PKGNAME" "/github/workspace/pkglist" &> $DEBUG_OFF; echo $?) ]]
-        then
-            echo -e "${ORANGE_COLOR}$PKGNAME package not found - skipping.${UNSET_COLOR}"
-            continue
-        fi
+        if [[ $(grep -Fx "$PKGNAME" "/github/workspace/pkglist" &> $DEBUG_OFF; echo $?) ]]; then
+
         echo -e "::group::${GREEN_COLOR}${BOLD_TEXT}Preparing env to build ${PKGNAME}.${UNSET_COLOR}"
 
         # nicely cleans up path, ie.
@@ -205,8 +202,12 @@ final_setup() {
 
         echo "::endgroup::"
         cat "/tmp/${PKGNAME}_deps.txt" >> "/tmp/pkg_deps_assorted.txt"
-#        cat "/tmp/${PKGNAME}_deps_aur.txt" >> "/tmp/pkg_deps_aur_assorted.txt"
         unset PKGNAME && echo "$PKGNAME"
+
+        else
+            echo -e "${ORANGE_COLOR}$PKGNAME package not found - skipping.${UNSET_COLOR}"
+            continue
+        fi
 
         cat "/github/workspace/pkglist" &> $DEBUG_OFF
 
@@ -306,11 +307,8 @@ build_pkg() {
     while read PKGLIST_PKG_BUILD && [[ -n $PKGLIST_PKG_BUILD ]] || [[ -n $PKGLIST_PKG_BUILD ]]
     do
         PKGNAME="${PKGLIST_PKG_BUILD}"
-        if [[ ! $(grep -Fx "$PKGNAME" "/github/workspace/pkglist" &> $DEBUG_OFF; echo $?) ]]
-        then
-            echo -e "${ORANGE_COLOR}$PKGNAME package not found - skipping.${UNSET_COLOR}"
-            continue
-        fi
+        if [[ $(grep -Fx "$PKGNAME" "/github/workspace/pkglist" &> $DEBUG_OFF; echo $?) ]]; then
+
         echo -e "::group::${GREEN_COLOR}${BOLD_TEXT}Packaging ${PKGNAME}.${UNSET_COLOR}"
 
         pkgbuild_dir=$(readlink "/github/workspace/pkgs/${PKGNAME}" -f)
@@ -362,5 +360,11 @@ build_pkg() {
         fi
         echo "::endgroup::"
         unset PKGNAME
+
+        else
+            echo -e "${ORANGE_COLOR}$PKGNAME package not found - skipping.${UNSET_COLOR}"
+            continue
+        fi
+
     done < "/github/workspace/pkglist"
 }
