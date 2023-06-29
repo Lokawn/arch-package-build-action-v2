@@ -16,7 +16,7 @@
 env_failed() {
     # Delete entry "${1}" from pkglist "${2}"
     mv -vf "${2}" "${2}.bak" &> $DEBUG_OFF
-    grep -xv "${1}" "${2}.bak" > "${2}"
+    grep -Fxv "${1}" "${2}.bak" > "${2}"
     rm -vf "${2}.bak" &> $DEBUG_OFF
     echo -e "${ORANGE_COLOR}${BOLD_TEXT}Failed to build ${1} - skipping.${UNSET_COLOR}"
     # The continue statement skips the remaining commands inside the body of
@@ -105,27 +105,33 @@ create_dependency_list() {
 
         while read -r aurdep && [[ -n "${aurdep}" ]] || [[ -n "${aurdep}" ]]
         do
-            if [[ ! $(grep -v "$aurdep" "/tmp/${PKGNAME}_deps_aur.txt" &> $DEBUG_OFF; echo $?) ]]
+            if [[ ! $(grep -Fx "$aurdep" "/tmp/${PKGNAME}_deps_aur.txt" &> $DEBUG_OFF; echo $?) ]]
             then
                 continue
             fi
 
-            if [[ -d "/github/workspace/pkgs/${aurdep}" ]]; then
-                if [[ $(grep -v "${aurdep}" "/github/workspace/pkglist" &> $DEBUG_OFF; echo $?) ]]
+            add_dep_to_pkglist() {
+                local aur_lineno pkg_lineno
+                aur_lineno=$(grep -nFx "${aurdep}" "/github/workspace/pkglist" | cut -d ":" -f1)
+                pkg_lineno=$(grep -nFx "${PKGNAME}" "/github/workspace/pkglist" | cut -d ":" -f1)
+                if [[ "$aur_lineno" < "$pkg_lineno" ]]
                 then
-                    local aur_lineno pkg_lineno
-                    aur_lineno=$(grep -n "${aurdep}" "/github/workspace/pkglist" | cut -d ":" -f1)
-                    pkg_lineno=$(grep -n "${PKGNAME}" "/github/workspace/pkglist" | cut -d ":" -f1)
-                    if [[ "$aur_lineno" < "$pkg_lineno" ]]
-                    then
-                        cp -vf /github/workspace/pkglist /github/workspace/pkglist.bak &> $DEBUG_OFF
-                        grep -xv "${PKGNAME}" "/github/workspace/pkglist.bak" | tee "/github/workspace/pkglist" &> $DEBUG_OFF
-                        echo "${PKGNAME}" | tee -a "/github/workspace/pkglist" &> $DEBUG_OFF
-                    fi
+                    cp -vf /github/workspace/pkglist /github/workspace/pkglist.bak &> $DEBUG_OFF
+                    grep -Fxv "${PKGNAME}" "/github/workspace/pkglist.bak" | tee "/github/workspace/pkglist" &> $DEBUG_OFF
+                    echo "${PKGNAME}" | tee -a "/github/workspace/pkglist" &> $DEBUG_OFF
+                fi
+            }
+
+            if [[ -d "/github/workspace/pkgs/${aurdep}" ]]; then
+                if [[ $(grep -Fx "${aurdep}" "/github/workspace/pkglist" &> $DEBUG_OFF; echo $?) ]]; then
+                    add_dep_to_pkglist
                     echo "${aurdep}" >> "${pkgbuild_dir}/${PKGNAME}_deps_aur_installable.txt"
                     # "${pkgbuild_dir}/${PKGNAME}_deps_aur_installable.txt" conatins locally available dependencies.
-                elif compgen -G "/github/workspace/pkgdir/${aurdep}-*${PKGEXT}" &> $DEBUG_OFF
-                then
+                elif compgen -G "/github/workspace/pkgdir/${aurdep}-*${PKGEXT}" &> $DEBUG_OFF; then
+                    echo "${aurdep}" >> "${pkgbuild_dir}/${PKGNAME}_deps_aur_installable.txt"
+                else
+                    echo "${PKGNAME}" | tee -a "/github/workspace/pkglist"
+                    add_dep_to_pkglist
                     echo "${aurdep}" >> "${pkgbuild_dir}/${PKGNAME}_deps_aur_installable.txt"
                 fi
             fi
@@ -162,7 +168,7 @@ final_setup() {
 
     while read -r PKGNAME && [[ -n $PKGNAME ]] || [[ -n $PKGNAME ]]
     do
-        if [[ ! $(grep -v "$PKGNAME" "/github/workspace/pkglist" &> $DEBUG_OFF; echo $?) ]]
+        if [[ ! $(grep -Fx "$PKGNAME" "/github/workspace/pkglist" &> $DEBUG_OFF; echo $?) ]]
         then
             echo -e "${ORANGE_COLOR}$PKGNAME package not found - skipping.${UNSET_COLOR}"
             continue
@@ -188,7 +194,7 @@ final_setup() {
         then
                 # https://unix.stackexchange.com/a/63663/444404
             echo -e "${ORANGE_COLOR}\"$(xargs<\
-                "/github/workspace/logdir/pkg_deps_aur_sorted.log")\" not in repos, neither PKGBUILD provided.${UNSET_COLOR}"
+                "/tmp/${PKGNAME}_deps_aur.txt")\" not in repos, neither PKGBUILD provided.${UNSET_COLOR}"
             echo -e "${ORANGE_COLOR}Skipping $PKGNAME.${UNSET_COLOR}"
             env_failed "${PKGNAME}" /github/workspace/pkglist
             continue
@@ -292,7 +298,7 @@ build_pkg() {
 
     while read -r PKGNAME && [[ -n $PKGNAME ]] || [[ -n $PKGNAME ]]
     do
-        if [[ ! $(grep -v "$PKGNAME" "/github/workspace/pkglist" &> $DEBUG_OFF; echo $?) ]]
+        if [[ ! $(grep -Fx "$PKGNAME" "/github/workspace/pkglist" &> $DEBUG_OFF; echo $?) ]]
         then
             echo -e "${ORANGE_COLOR}$PKGNAME package not found - skipping.${UNSET_COLOR}"
             continue
