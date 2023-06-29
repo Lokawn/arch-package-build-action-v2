@@ -105,7 +105,7 @@ create_dependency_list() {
             | tee "/tmp/${PKGNAME}_deps.txt" &> $DEBUG_OFF
             # "/tmp/${PKGNAME}_deps.txt" contains only packages present in repositories.
 
-        while IFS= read -r aurdep && [[ -n "${aurdep}" ]] || [[ -n "${aurdep}" ]]
+        while read aurdep && [[ -n "${aurdep}" ]] || [[ -n "${aurdep}" ]]
         do
             if [[ ! $(grep -Fx "$aurdep" "/tmp/${PKGNAME}_deps_aur.txt" &> $DEBUG_OFF; echo $?) ]]
             then
@@ -168,7 +168,7 @@ final_setup() {
 
     cat "/github/workspace/pkglist" &> $DEBUG_OFF
 
-    while IFS= read -r PKGLIST_PKG_SETUP && [[ -n $PKGLIST_PKG_SETUP ]] || [[ -n $PKGLIST_PKG_SETUP ]]
+    while read PKGLIST_PKG_SETUP && [[ -n $PKGLIST_PKG_SETUP ]] || [[ -n $PKGLIST_PKG_SETUP ]]
     do
         PKGNAME="${PKGLIST_PKG_SETUP}"
         if [[ ! $(grep -Fx "$PKGNAME" "/github/workspace/pkglist" &> $DEBUG_OFF; echo $?) ]]
@@ -303,7 +303,7 @@ build_pkg() {
     # https://www.shellcheck.net/wiki/SC2013
     #for PKGNAME in $(cat /github/workspace/pkglist)
 
-    while IFS= read -r PKGLIST_PKG_BUILD && [[ -n $PKGLIST_PKG_BUILD ]] || [[ -n $PKGLIST_PKG_BUILD ]]
+    while read PKGLIST_PKG_BUILD && [[ -n $PKGLIST_PKG_BUILD ]] || [[ -n $PKGLIST_PKG_BUILD ]]
     do
         PKGNAME="${PKGLIST_PKG_BUILD}"
         if [[ ! $(grep -Fx "$PKGNAME" "/github/workspace/pkglist" &> $DEBUG_OFF; echo $?) ]]
@@ -319,7 +319,7 @@ build_pkg() {
         echo -e "${ORANGE_COLOR}${BOLD_TEXT}PWD='${PWD}'${UNSET_COLOR}"
 
         if [[ -s "/tmp/${PKGNAME}_deps_aur_installable.txt" ]]; then
-        while IFS= read -r aurdep && [[ -n "${aurdep}" ]] || [[ -n "${aurdep}" ]]
+        while read aurdep && [[ -n "${aurdep}" ]] || [[ -n "${aurdep}" ]]
         do
             for aurdeppkg in '/github/workspace/pkgdir/'"${aurdep}"-*"${PKGEXT}"
             do
