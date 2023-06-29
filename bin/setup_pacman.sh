@@ -11,8 +11,6 @@ pacman-key --populate --verbose archlinux &> $DEBUG_OFF
 #Server = https://mirror.osbeck.com/archlinux/
 #EOF
 
-pacman -Sy &> $DEBUG_OFF # just to remove warning.
-
 if [[ -n "$ENABLE_DEBUG" && "$ENABLE_DEBUG" = true ]]; then
     echo "::endgroup::"
 else
@@ -30,3 +28,7 @@ then
         exit 1
     fi
 fi
+
+sed -i '/\[core\]/i \[repo-local\]\nServer\ =\ file:\/\/\/github\/workspace\/repo\/x86_64-old' /etc/pacman.conf
+
+pacman -Sy &> $DEBUG_OFF # just to remove warning.
