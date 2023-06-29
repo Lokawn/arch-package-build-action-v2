@@ -99,7 +99,7 @@ create_dependency_list() {
         cp -v "/tmp/${PKGNAME}_deps.txt" "/tmp/${PKGNAME}_deps.bak" &> $DEBUG_OFF
         cp -v "/tmp/${PKGNAME}_deps_aur.txt" "/tmp/${PKGNAME}_deps_aur.bak" &> $DEBUG_OFF
 
-        comm -23 <(sort "/tmp/${PKGNAME}_deps.bak") <(sort "${pkgbuild_dir}/${PKGNAME}_deps_aur.txt") \
+        comm -23 <(sort "/tmp/${PKGNAME}_deps.bak") <(sort "/tmp/${PKGNAME}_deps_aur.txt") \
             | tee "/tmp/${PKGNAME}_deps.txt" &> $DEBUG_OFF
             # "/tmp/${PKGNAME}_deps.txt" contains only packages present in repositories.
 
