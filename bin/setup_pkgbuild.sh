@@ -107,10 +107,7 @@ create_dependency_list() {
 
         while read aurdep && [[ -n "${aurdep}" ]] || [[ -n "${aurdep}" ]]
         do
-            if [[ ! $(grep -Fx "$aurdep" "/tmp/${PKGNAME}_deps_aur.txt" &> $DEBUG_OFF; echo $?) ]]
-            then
-                continue
-            fi
+            if [[ $(grep -Fx "$aurdep" "/tmp/${PKGNAME}_deps_aur.txt" &> $DEBUG_OFF) ]]; then
 
             add_dep_to_pkglist() {
                 local aur_lineno pkg_lineno
@@ -125,7 +122,7 @@ create_dependency_list() {
             }
 
             if [[ -d "/github/workspace/pkgs/${aurdep}" ]]; then
-                if [[ $(grep -Fx "${aurdep}" "/github/workspace/pkglist" &> $DEBUG_OFF; echo $?) ]]; then
+                if [[ $(grep -Fx "${aurdep}" "/github/workspace/pkglist" &> $DEBUG_OFF) ]]; then
                     add_dep_to_pkglist
                     echo "${aurdep}" | tee -a "/tmp/${PKGNAME}_deps_aur_installable.txt"
                     # "/tmp/${PKGNAME}_deps_aur_installable.txt" conatins locally available dependencies.
@@ -139,6 +136,10 @@ create_dependency_list() {
             fi
 
             unset aurdep
+
+            else continue
+            fi
+
         done < "/tmp/${PKGNAME}_deps_aur.txt"
 
         if [[ -s "/tmp/${PKGNAME}_deps_aur_installable.txt" ]]
@@ -171,7 +172,7 @@ final_setup() {
     while read PKGLIST_PKG_SETUP && [[ -n ${PKGLIST_PKG_SETUP} ]] || [[ -n ${PKGLIST_PKG_SETUP} ]]
     do
         PKGNAME="${PKGLIST_PKG_SETUP}"
-        if [[ $(grep -Fx "${PKGNAME}" "/github/workspace/pkglist" &> $DEBUG_OFF; echo $?) ]]; then
+        if [[ $(grep -Fx "${PKGNAME}" "/github/workspace/pkglist" &> $DEBUG_OFF) ]]; then
 
         echo -e "::group::${GREEN_COLOR}${BOLD_TEXT}Preparing env to build ${PKGNAME}.${UNSET_COLOR}"
 
@@ -307,7 +308,7 @@ build_pkg() {
     while read PKGLIST_PKG_BUILD && [[ -n $PKGLIST_PKG_BUILD ]] || [[ -n $PKGLIST_PKG_BUILD ]]
     do
         PKGNAME="${PKGLIST_PKG_BUILD}"
-        if [[ $(grep -Fx "$PKGNAME" "/github/workspace/pkglist" &> $DEBUG_OFF; echo $?) ]]; then
+        if [[ $(grep -Fx "$PKGNAME" "/github/workspace/pkglist" &> $DEBUG_OFF) ]]; then
 
         echo -e "::group::${GREEN_COLOR}${BOLD_TEXT}Packaging ${PKGNAME}.${UNSET_COLOR}"
 
