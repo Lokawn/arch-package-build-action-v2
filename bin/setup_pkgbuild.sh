@@ -85,7 +85,7 @@ import_public_keys() {
 
 create_dependency_list() {
         # https://www.shellcheck.net/wiki/SC2024 - sudo doesn't affect redirects
-    grep -E 'makedepends' .SRCINFO | sed -e 's/.*depends = //' -e 's/:.*//' -e 's/[<..>]=[0-9].*//g' -e 's/=[0-9].*//g' \
+    grep -E 'depends' .SRCINFO | sed -e 's/.*depends = //' -e 's/:.*//' -e 's/[<..>]=[0-9].*//g' -e 's/=[0-9].*//g' \
         | tee -a "/tmp/${PKGNAME}_deps.txt" &> $DEBUG_OFF
         # "/tmp/${PKGNAME}_deps.txt" here contains all package dependencies.
 
