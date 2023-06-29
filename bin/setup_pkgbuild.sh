@@ -89,10 +89,12 @@ create_dependency_list() {
         | tee -a "/tmp/${PKGNAME}_deps.txt" &> $DEBUG_OFF
         # "/tmp/${PKGNAME}_deps.txt" here contains all package dependencies.
 
-        # Only print lines unique to column 2.
-    comm -13 <(pacman -Slq | sort) <(sort "/tmp/${PKGNAME}_deps.txt") \
-        | tee "/tmp/${PKGNAME}_deps_aur.txt" &> $DEBUG_OFF
-        # "/tmp/${PKGNAME}_deps_aur.txt" contains dependencies not in repositories.
+    if [[ -s "/tmp/${PKGNAME}_deps.txt" ]]; then
+            # Only print lines unique to column 2.
+        comm -13 <(pacman -Slq | sort) <(sort "/tmp/${PKGNAME}_deps.txt") \
+            | tee "/tmp/${PKGNAME}_deps_aur.txt" &> $DEBUG_OFF
+            # "/tmp/${PKGNAME}_deps_aur.txt" contains dependencies not in repositories.
+    fi
 
     if [[ -s "/tmp/${PKGNAME}_deps_aur.txt" ]]
     then
@@ -211,7 +213,11 @@ final_setup() {
 }
 
 seg_aur() {
-    sort "/tmp/pkg_deps_assorted.txt" | tee "/tmp/pkg_deps_sorted.txt" &> $DEBUG_OFF
+
+    if [[ -s "/tmp/pkg_deps_assorted.txt" ]]; then
+        sort "/tmp/pkg_deps_assorted.txt" | tee "/tmp/pkg_deps_sorted.txt" &> $DEBUG_OFF
+    fi
+
 #    sort "/tmp/pkg_deps_aur_assorted.txt" | tee "/tmp/pkg_deps_aur_sorted.txt" &> $DEBUG_OFF
 
 #    if [[ -s "/tmp/pkg_deps_aur_sorted.txt" ]]; then
