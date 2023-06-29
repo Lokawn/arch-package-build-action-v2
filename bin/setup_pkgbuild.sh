@@ -316,6 +316,7 @@ build_pkg() {
         cd "${pkgbuild_dir}"
         echo -e "${ORANGE_COLOR}${BOLD_TEXT}PWD='${PWD}'${UNSET_COLOR}"
 
+        if [[ -s "/tmp/${PKGNAME}_deps_aur_installable.txt" ]]; then
         while read -r aurdep && [[ -n "${aurdep}" ]] || [[ -n "${aurdep}" ]]
         do
             for aurdeppkg in '/github/workspace/pkgdir/'"${aurdep}"-*"${PKGEXT}"
@@ -326,6 +327,7 @@ build_pkg() {
             done
             unset aurdep
         done < "/tmp/${PKGNAME}_deps_aur_installable.txt"
+        fi
 
         if echo -e "${GREEN_COLOR}${BOLD_TEXT}Building ${PKGNAME}.${UNSET_COLOR}" && \
             sudo -u buildd makepkg --syncdeps --noconfirm \
