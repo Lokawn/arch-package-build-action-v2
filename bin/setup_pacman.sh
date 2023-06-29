@@ -29,6 +29,6 @@ then
     fi
 fi
 
-sed -i '/\[core\]/i \[repo-local\]\nServer\ =\ file:\/\/\/github\/workspace\/repo\/x86_64-old' /etc/pacman.conf
+sed -i '/\[core\]/i \[repo\]\nServer\ =\ file:\/\/\/github\/workspace\/repo\/x86_64-old' /etc/pacman.conf
 
 pacman -Sy &> $DEBUG_OFF # just to remove warning.
