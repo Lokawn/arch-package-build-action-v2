@@ -127,28 +127,28 @@ create_dependency_list() {
             if [[ -d "/github/workspace/pkgs/${aurdep}" ]]; then
                 if [[ $(grep -Fx "${aurdep}" "/github/workspace/pkglist" &> $DEBUG_OFF; echo $?) ]]; then
                     add_dep_to_pkglist
-                    echo "${aurdep}" >> "${pkgbuild_dir}/${PKGNAME}_deps_aur_installable.txt"
-                    # "${pkgbuild_dir}/${PKGNAME}_deps_aur_installable.txt" conatins locally available dependencies.
+                    echo "${aurdep}" >> "/tmp/${PKGNAME}_deps_aur_installable.txt"
+                    # "/tmp/${PKGNAME}_deps_aur_installable.txt" conatins locally available dependencies.
                 elif compgen -G "/github/workspace/pkgdir/${aurdep}-*${PKGEXT}" &> $DEBUG_OFF; then
-                    echo "${aurdep}" >> "${pkgbuild_dir}/${PKGNAME}_deps_aur_installable.txt"
+                    echo "${aurdep}" >> "/tmp/${PKGNAME}_deps_aur_installable.txt"
                 else
                     echo "${PKGNAME}" | tee -a "/github/workspace/pkglist"
                     add_dep_to_pkglist
-                    echo "${aurdep}" >> "${pkgbuild_dir}/${PKGNAME}_deps_aur_installable.txt"
+                    echo "${aurdep}" >> "/tmp/${PKGNAME}_deps_aur_installable.txt"
                 fi
             fi
 
             unset aurdep
         done < "/tmp/${PKGNAME}_deps_aur.txt"
 
-        if [[ -s "${pkgbuild_dir}/${PKGNAME}_deps_aur_installable.txt" ]]
+        if [[ -s "/tmp/${PKGNAME}_deps_aur_installable.txt" ]]
         then
             echo -e "${ORANGE_COLOR}\"$(xargs<\
-                "${pkgbuild_dir}/${PKGNAME}_deps_aur_installable.txt")\" PKGBUILD in source directory.${UNSET_COLOR}"
+                "/tmp/${PKGNAME}_deps_aur_installable.txt")\" PKGBUILD in source directory.${UNSET_COLOR}"
 
             # Since column 2 should not contain any unique lines "-3" is used (so -2 not needed).
             # Only print lines unique to column 1.
-            comm -3 <(sort "/tmp/${PKGNAME}_deps_aur.bak") <(sort "${pkgbuild_dir}/${PKGNAME}_deps_aur_installable.txt") \
+            comm -3 <(sort "/tmp/${PKGNAME}_deps_aur.bak") <(sort "/tmp/${PKGNAME}_deps_aur_installable.txt") \
                 | tee "/tmp/${PKGNAME}_deps_aur.txt" &> $DEBUG_OFF
                 # "/tmp/${PKGNAME}_deps_aur.txt" conatins packages neither locally available nor in repositories.
         fi
@@ -316,19 +316,16 @@ build_pkg() {
         cd "${pkgbuild_dir}"
         echo -e "${ORANGE_COLOR}${BOLD_TEXT}PWD='${PWD}'${UNSET_COLOR}"
 
-        if [[ -s "${pkgbuild_dir}/${PKGNAME}_deps_aur_installable.txt" ]]
-        then
-            while read -r aurdep && [[ -n "${aurdep}" ]] || [[ -n "${aurdep}" ]]
+        while read -r aurdep && [[ -n "${aurdep}" ]] || [[ -n "${aurdep}" ]]
+        do
+            for aurdeppkg in '/github/workspace/pkgdir/'"${aurdep}"-*"${PKGEXT}"
             do
-                for aurdeppkg in '/github/workspace/pkgdir/'"${aurdep}"-*"${PKGEXT}"
-                do
-                    echo -e "${ORANGE_COLOR}Installing ${aurdep}.${UNSET_COLOR}"
-                    pacman -Uv --noconfirm "${aurdeppkg}" \
-                        |& sudo -u buildd tee "/github/workspace/logdir/pacman.log" &> $DEBUG_OFF
-                done
-                unset aurdep
-            done < "${pkgbuild_dir}/${PKGNAME}_deps_aur_installable.txt"
-        fi
+                echo -e "${ORANGE_COLOR}Installing ${aurdep}.${UNSET_COLOR}"
+                pacman -Uv --noconfirm "${aurdeppkg}" \
+                    |& sudo -u buildd tee "/github/workspace/logdir/pacman.log" &> $DEBUG_OFF
+            done
+            unset aurdep
+        done < "/tmp/${PKGNAME}_deps_aur_installable.txt"
 
         if echo -e "${GREEN_COLOR}${BOLD_TEXT}Building ${PKGNAME}.${UNSET_COLOR}" && \
             sudo -u buildd makepkg --syncdeps --noconfirm \
