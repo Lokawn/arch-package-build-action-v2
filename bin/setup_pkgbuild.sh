@@ -108,11 +108,11 @@ create_dependency_list() {
         current_run_aurdep=0
         while read aurdep && [[ -n "${aurdep}" ]] || [[ -n "${aurdep}" ]]
         do
-            if [[ ! $(grep -Fx "${aurdep}" "/tmp/${PKGNAME}_deps_aur.txt" &> $DEBUG_OFF) ]]; then
+            if ! grep -Fx "${aurdep}" "/tmp/${PKGNAME}_deps_aur.txt" &> $DEBUG_OFF; then
                     aurdep=$(head -n $(($current_run_aurdep + 1)) "/tmp/${PKGNAME}_deps_aur.txt" | tail -n +$(($current_run_aurdep + 1)))
             fi
 
-            if [[ $(grep -Fx "${aurdep}" "/tmp/${PKGNAME}_deps_aur.txt" &> $DEBUG_OFF) ]]; then
+            if grep -Fx "${aurdep}" "/tmp/${PKGNAME}_deps_aur.txt" &> $DEBUG_OFF; then
             add_dep_to_pkglist() {
                 local aur_lineno pkg_lineno
                 aur_lineno=$(grep -nFx "${aurdep}" "/github/workspace/pkglist" | cut -d ":" -f1)
@@ -126,7 +126,7 @@ create_dependency_list() {
             }
 
             if [[ -d "/github/workspace/pkgs/${aurdep}" ]]; then
-                if [[ $(grep -Fx "${aurdep}" "/github/workspace/pkglist" &> $DEBUG_OFF) ]]; then
+                if grep -Fx "${aurdep}" "/github/workspace/pkglist" &> $DEBUG_OFF; then
                     add_dep_to_pkglist
                     echo "${aurdep}" | tee -a "/tmp/${PKGNAME}_deps_aur_installable.txt"
                     # "/tmp/${PKGNAME}_deps_aur_installable.txt" conatins locally available dependencies.
@@ -170,7 +170,7 @@ create_dependency_list() {
             current_deps_aur=0
             while read CHECKPKG_PKG && [[ -n $CHECKPKG_PKG ]] || [[ -n $CHECKPKG_PKG ]]
             do
-                if [[ ! $(grep -Fx "${CHECKPKG_PKG}" "/tmp/${PKGNAME}_deps_aur.bak" &> $DEBUG_OFF) ]]; then
+                if ! grep -Fx "${CHECKPKG_PKG}" "/tmp/${PKGNAME}_deps_aur.bak" &> $DEBUG_OFF; then
                     CHECKPKG_PKG=$(head -n $((current_deps_aur + 1)) "/github/workspace/pkglist" | tail -n +$((current_deps_aur + 1)))
                 fi
                 CHECKPKG_PKG="${CHECKPKG}"
@@ -201,12 +201,12 @@ final_setup() {
     current_pkgsetup=0
     while read PKGLIST_PKG_SETUP && [[ -n ${PKGLIST_PKG_SETUP} ]] || [[ -n ${PKGLIST_PKG_SETUP} ]]
     do
-        if [[ ! $(grep -Fx "${PKGLIST_PKG_SETUP}" "/github/workspace/pkglist" &> $DEBUG_OFF) ]]; then
+        if ! grep -Fx "${PKGLIST_PKG_SETUP}" "/github/workspace/pkglist" &> $DEBUG_OFF; then
             PKGLIST_PKG_SETUP=$(head -n $(($current_pkgsetup + 1)) "/github/workspace/pkglist" | tail -n +$(($current_pkgsetup + 1)))
         fi
 
         PKGNAME="${PKGLIST_PKG_SETUP}"
-        if [[ $(grep -Fx "${PKGNAME}" "/github/workspace/pkglist" &> $DEBUG_OFF) ]]; then
+        if grep -Fx "${PKGNAME}" "/github/workspace/pkglist" &> $DEBUG_OFF; then
 
             echo -e "::group::${GREEN_COLOR}${BOLD_TEXT}Preparing env to build ${PKGNAME}.${UNSET_COLOR}"
 
@@ -343,12 +343,12 @@ build_pkg() {
     current_pkgbuild=0
     while read PKGLIST_PKG_BUILD && [[ -n $PKGLIST_PKG_BUILD ]] || [[ -n $PKGLIST_PKG_BUILD ]]
     do
-        if [[ ! $(grep -Fx "${PKGLIST_PKG_BUILD}" "/github/workspace/pkglist" &> $DEBUG_OFF) ]]; then
+        if ! grep -Fx "${PKGLIST_PKG_BUILD}" "/github/workspace/pkglist" &> $DEBUG_OFF; then
             PKGLIST_PKG_BUILD=$(head -n $(($current_pkgbuild + 1)) "/github/workspace/pkglist" | tail -n +$(($current_pkgbuild + 1)))
         fi
 
         PKGNAME="${PKGLIST_PKG_BUILD}"
-        if [[ $(grep -Fx "${PKGNAME}" "/github/workspace/pkglist" &> $DEBUG_OFF) ]]; then
+        if grep -Fx "${PKGNAME}" "/github/workspace/pkglist" &> $DEBUG_OFF; then
 
             echo -e "::group::${GREEN_COLOR}${BOLD_TEXT}Packaging ${PKGNAME}.${UNSET_COLOR}"
 
@@ -361,7 +361,7 @@ build_pkg() {
             current_build_aurdep=0
             while read aurdep && [[ -n "${aurdep}" ]] || [[ -n "${aurdep}" ]]
             do
-                if [[ ! $(grep -Fx "${aurdep}" "/tmp/${PKGNAME}_deps_aur_installable.txt" &> $DEBUG_OFF) ]]; then
+                if ! grep -Fx "${aurdep}" "/tmp/${PKGNAME}_deps_aur_installable.txt" &> $DEBUG_OFF; then
                     aurdep=$(head -n $(($current_build_aurdep + 1)) "/tmp/${PKGNAME}_deps_aur_installable.txt" | tail -n +$(($current_build_aurdep + 1)))
                 fi
 
