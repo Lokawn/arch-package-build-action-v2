@@ -105,15 +105,19 @@ create_dependency_list() {
             | tee "/tmp/${PKGNAME}_deps.txt" &> $DEBUG_OFF
             # "/tmp/${PKGNAME}_deps.txt" contains only packages present in repositories.
 
+        current_run_aurdep=0
         while read aurdep && [[ -n "${aurdep}" ]] || [[ -n "${aurdep}" ]]
         do
-            if [[ $(grep -Fx "$aurdep" "/tmp/${PKGNAME}_deps_aur.txt" &> $DEBUG_OFF) ]]; then
+            if [[ ! $(grep -Fx "$aurdep" "/tmp/${PKGNAME}_deps_aur.txt" &> $DEBUG_OFF) ]]; then
+                    aurdep=$(head -n $(($current_run_aurdep + 1)) "/tmp/${PKGNAME}_deps_aur.txt" | tail -n +$(($current_run_aurdep + 1)))
+            fi
 
+            if [[ $(grep -Fx "$aurdep" "/tmp/${PKGNAME}_deps_aur.txt" &> $DEBUG_OFF) ]]; then
             add_dep_to_pkglist() {
                 local aur_lineno pkg_lineno
                 aur_lineno=$(grep -nFx "${aurdep}" "/github/workspace/pkglist" | cut -d ":" -f1)
                 pkg_lineno=$(grep -nFx "${PKGNAME}" "/github/workspace/pkglist" | cut -d ":" -f1)
-                if [[ "$aur_lineno" < "$pkg_lineno" ]]
+                if [[ "$aur_lineno" > "$pkg_lineno" ]]
                 then
                     cp -vf /github/workspace/pkglist /github/workspace/pkglist.bak &> $DEBUG_OFF
                     grep -Fxv "${PKGNAME}" "/github/workspace/pkglist.bak" | tee "/github/workspace/pkglist" &> $DEBUG_OFF
@@ -136,11 +140,14 @@ create_dependency_list() {
             fi
 
             unset aurdep
+            current_run_aurdep=$(($current_run_aurdep + 1))
 
             else continue
             fi
 
         done < "/tmp/${PKGNAME}_deps_aur.txt"
+
+        unset current_run_aurdep
 
         if [[ -s "/tmp/${PKGNAME}_deps_aur_installable.txt" ]]
         then
@@ -169,41 +176,46 @@ final_setup() {
 
     cat "/github/workspace/pkglist" &> $DEBUG_OFF
 
+    current_pkgsetup=0
     while read PKGLIST_PKG_SETUP && [[ -n ${PKGLIST_PKG_SETUP} ]] || [[ -n ${PKGLIST_PKG_SETUP} ]]
     do
+        if [[ ! $(grep -Fx "${PKGLIST_PKG_SETUP}" "/github/workspace/pkglist" &> $DEBUG_OFF) ]]; then
+            PKGLIST_PKG_SETUP=$(head -n $(($current_pkgsetup + 1)) "/github/workspace/pkglist" | tail -n +$(($current_pkgsetup + 1)))
+        fi
+
         PKGNAME="${PKGLIST_PKG_SETUP}"
         if [[ $(grep -Fx "${PKGNAME}" "/github/workspace/pkglist" &> $DEBUG_OFF) ]]; then
 
-        echo -e "::group::${GREEN_COLOR}${BOLD_TEXT}Preparing env to build ${PKGNAME}.${UNSET_COLOR}"
+            echo -e "::group::${GREEN_COLOR}${BOLD_TEXT}Preparing env to build ${PKGNAME}.${UNSET_COLOR}"
 
-        # nicely cleans up path, ie.
-        # ///dsq/dqsdsq/my-package//// -> /dsq/dqsdsq/my-package
-        pkgbuild_dir=$(readlink "/github/workspace/pkgs/${PKGNAME}" -f)
+            # nicely cleans up path, ie.
+            # ///dsq/dqsdsq/my-package//// -> /dsq/dqsdsq/my-package
+            pkgbuild_dir=$(readlink "/github/workspace/pkgs/${PKGNAME}" -f)
 
-        initial_setup || continue
+            initial_setup || continue
 
-        cd "${pkgbuild_dir}"
-        echo -e "${ORANGE_COLOR}${BOLD_TEXT}PWD='${PWD}'${UNSET_COLOR}"
+            cd "${pkgbuild_dir}"
+            echo -e "${ORANGE_COLOR}${BOLD_TEXT}PWD='${PWD}'${UNSET_COLOR}"
 
-        create_srcinfo || continue
+            create_srcinfo || continue
 
-        import_public_keys || continue
+            import_public_keys || continue
 
-        create_dependency_list
+            create_dependency_list
 
-        if [[ -s "/tmp/${PKGNAME}_deps_aur.txt" ]]
-        then
-                # https://unix.stackexchange.com/a/63663/444404
-            echo -e "${ORANGE_COLOR}\"$(xargs<\
-                "/tmp/${PKGNAME}_deps_aur.txt")\" not in repos, neither PKGBUILD provided.${UNSET_COLOR}"
-            echo -e "${ORANGE_COLOR}Skipping ${PKGNAME}.${UNSET_COLOR}"
-            env_failed "${PKGNAME}" /github/workspace/pkglist
-            continue
-        fi
+            if [[ -s "/tmp/${PKGNAME}_deps_aur.txt" ]]
+            then
+                    # https://unix.stackexchange.com/a/63663/444404
+                echo -e "${ORANGE_COLOR}\"$(xargs<\
+                    "/tmp/${PKGNAME}_deps_aur.txt")\" not in repos, neither PKGBUILD provided.${UNSET_COLOR}"
+                echo -e "${ORANGE_COLOR}Skipping ${PKGNAME}.${UNSET_COLOR}"
+                env_failed "${PKGNAME}" /github/workspace/pkglist
+                continue
+            fi
 
-        echo "::endgroup::"
-        cat "/tmp/${PKGNAME}_deps.txt" | tee -a "/tmp/pkg_deps_assorted.txt"
-        unset PKGNAME && echo "${PKGNAME}"
+            echo "::endgroup::"
+            cat "/tmp/${PKGNAME}_deps.txt" | tee -a "/tmp/pkg_deps_assorted.txt"
+            unset PKGNAME && echo "${PKGNAME}"
 
         else
             echo -e "${ORANGE_COLOR}${PKGNAME} package not found - skipping.${UNSET_COLOR}"
@@ -211,8 +223,10 @@ final_setup() {
         fi
 
         cat "/github/workspace/pkglist" &> $DEBUG_OFF
+        current_pkgsetup=$(($current_pkgsetup + 1))
 
     done < "/github/workspace/pkglist"
+    unset current_pkgsetup
 }
 
 seg_aur() {
@@ -305,62 +319,74 @@ build_pkg() {
     # https://www.shellcheck.net/wiki/SC2013
     #for PKGNAME in $(cat /github/workspace/pkglist)
 
+    current_pkgbuild=0
     while read PKGLIST_PKG_BUILD && [[ -n $PKGLIST_PKG_BUILD ]] || [[ -n $PKGLIST_PKG_BUILD ]]
     do
+        if [[ ! $(grep -Fx "${PKGLIST_PKG_BUILD}" "/github/workspace/pkglist" &> $DEBUG_OFF) ]]; then
+            PKGLIST_PKG_BUILD=$(head -n $(($current_pkgbuild + 1)) "/github/workspace/pkglist" | tail -n +$(($current_pkgbuild + 1)))
+        fi
+
         PKGNAME="${PKGLIST_PKG_BUILD}"
-        if [[ $(grep -Fx "$PKGNAME" "/github/workspace/pkglist" &> $DEBUG_OFF) ]]; then
+        if [[ $(grep -Fx "${PKGNAME}" "/github/workspace/pkglist" &> $DEBUG_OFF) ]]; then
 
-        echo -e "::group::${GREEN_COLOR}${BOLD_TEXT}Packaging ${PKGNAME}.${UNSET_COLOR}"
+            echo -e "::group::${GREEN_COLOR}${BOLD_TEXT}Packaging ${PKGNAME}.${UNSET_COLOR}"
 
-        pkgbuild_dir=$(readlink "/github/workspace/pkgs/${PKGNAME}" -f)
+            pkgbuild_dir=$(readlink "/github/workspace/pkgs/${PKGNAME}" -f)
 
-        cd "${pkgbuild_dir}"
-        echo -e "${ORANGE_COLOR}${BOLD_TEXT}PWD='${PWD}'${UNSET_COLOR}"
+            cd "${pkgbuild_dir}"
+            echo -e "${ORANGE_COLOR}${BOLD_TEXT}PWD='${PWD}'${UNSET_COLOR}"
 
-        if [[ -s "/tmp/${PKGNAME}_deps_aur_installable.txt" ]]; then
-        while read aurdep && [[ -n "${aurdep}" ]] || [[ -n "${aurdep}" ]]
-        do
-            for aurdeppkg in '/github/workspace/pkgdir/'"${aurdep}"-*"${PKGEXT}"
+            if [[ -s "/tmp/${PKGNAME}_deps_aur_installable.txt" ]]; then
+            current_build_aurdep=0
+            while read aurdep && [[ -n "${aurdep}" ]] || [[ -n "${aurdep}" ]]
             do
-                echo -e "${ORANGE_COLOR}Installing ${aurdep}.${UNSET_COLOR}"
-                pacman -Uv --noconfirm "${aurdeppkg}" \
-                    |& sudo -u buildd tee "/github/workspace/logdir/pacman.log" &> $DEBUG_OFF
-            done
-            unset aurdep
-        done < "/tmp/${PKGNAME}_deps_aur_installable.txt"
-        fi
-
-        if echo -e "${GREEN_COLOR}${BOLD_TEXT}Building ${PKGNAME}.${UNSET_COLOR}" && \
-            sudo -u buildd makepkg --syncdeps --noconfirm \
-                |& sudo -u buildd tee "/github/workspace/logdir/build_${PKGNAME}.log" &> $DEBUG_OFF
-            # SC2024: sudo doesn't affect redirects.
-            # https://www.shellcheck.net/wiki/SC2024
-        then
-            # SC2144: -f doesn't work with globs. Use a for loop.
-            # https://www.shellcheck.net/wiki/SC2144
-            for pkg in "${pkgbuild_dir}"/*"${PKGEXT}"
-            do
-                if [[ -f "${pkg}" ]]
-                then
-                    echo -e "${BLUE_COLOR}${pkg//${PKGEXT}} packaged.${UNSET_COLOR}"
-                        # https://www.shellcheck.net/wiki/SC2104
-                    namcap_pkg "${pkg}" || continue
-                    pkg_info "${pkg}" || continue
-                    pkg_files "${pkg}" || continue
-                    import_sign  "${pkg}" || continue
-                    mv -v "${pkg}"* "/github/workspace/pkgdir" &> $DEBUG_OFF
-                    echo "Package file moved to PKGDIR."
-                else
-                    echo -e "${ORANGE_COLOR}${BOLD_TEXT}Failed to build ${PKGNAME} - skipping.${UNSET_COLOR}"
-                    continue
+                if [[ ! $(grep -Fx "${aurdep}" "/tmp/${PKGNAME}_deps_aur_installable.txt" &> $DEBUG_OFF) ]]; then
+                    aurdep=$(head -n $(($current_build_aurdep + 1)) "/tmp/${PKGNAME}_deps_aur_installable.txt" | tail -n +$(($current_build_aurdep + 1)))
                 fi
-            done
-        else
-            echo -e "${ORANGE_COLOR}${BOLD_TEXT}Failed to build ${PKGNAME} - skipping.${UNSET_COLOR}"
-            continue
-        fi
-        echo "::endgroup::"
-        unset PKGNAME
+
+                for aurdeppkg in '/github/workspace/pkgdir/'"${aurdep}"-*"${PKGEXT}"
+                do
+                    echo -e "${ORANGE_COLOR}Installing ${aurdep}.${UNSET_COLOR}"
+                    pacman -Uv --noconfirm "${aurdeppkg}" \
+                        |& sudo -u buildd tee "/github/workspace/logdir/pacman.log" &> $DEBUG_OFF
+                done
+                unset aurdep
+                current_build_aurdep=$(($current_build_aurdep + 1))
+            done < "/tmp/${PKGNAME}_deps_aur_installable.txt"
+            unset current_build_aurdep
+            fi
+
+            if echo -e "${GREEN_COLOR}${BOLD_TEXT}Building ${PKGNAME}.${UNSET_COLOR}" && \
+                sudo -u buildd makepkg --syncdeps --noconfirm \
+                    |& sudo -u buildd tee "/github/workspace/logdir/build_${PKGNAME}.log" &> $DEBUG_OFF
+                # SC2024: sudo doesn't affect redirects.
+                # https://www.shellcheck.net/wiki/SC2024
+            then
+                # SC2144: -f doesn't work with globs. Use a for loop.
+                # https://www.shellcheck.net/wiki/SC2144
+                for pkg in "${pkgbuild_dir}"/*"${PKGEXT}"
+                do
+                    if [[ -f "${pkg}" ]]
+                    then
+                        echo -e "${BLUE_COLOR}${pkg//${PKGEXT}} packaged.${UNSET_COLOR}"
+                            # https://www.shellcheck.net/wiki/SC2104
+                        namcap_pkg "${pkg}" || continue
+                        pkg_info "${pkg}" || continue
+                        pkg_files "${pkg}" || continue
+                        import_sign  "${pkg}" || continue
+                        mv -v "${pkg}"* "/github/workspace/pkgdir" &> $DEBUG_OFF
+                        echo "Package file moved to PKGDIR."
+                    else
+                        echo -e "${ORANGE_COLOR}${BOLD_TEXT}Failed to build ${PKGNAME} - skipping.${UNSET_COLOR}"
+                        continue
+                    fi
+                done
+            else
+                echo -e "${ORANGE_COLOR}${BOLD_TEXT}Failed to build ${PKGNAME} - skipping.${UNSET_COLOR}"
+                continue
+            fi
+            echo "::endgroup::"
+            unset PKGNAME
 
         else
             echo -e "${ORANGE_COLOR}$PKGNAME package not found - skipping.${UNSET_COLOR}"
@@ -368,4 +394,5 @@ build_pkg() {
         fi
 
     done < "/github/workspace/pkglist"
+    unset current_pkgbuild
 }
