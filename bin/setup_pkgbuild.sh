@@ -127,14 +127,14 @@ create_dependency_list() {
             if [[ -d "/github/workspace/pkgs/${aurdep}" ]]; then
                 if [[ $(grep -Fx "${aurdep}" "/github/workspace/pkglist" &> $DEBUG_OFF; echo $?) ]]; then
                     add_dep_to_pkglist
-                    echo "${aurdep}" >> "/tmp/${PKGNAME}_deps_aur_installable.txt"
+                    echo "${aurdep}" | tee -a "/tmp/${PKGNAME}_deps_aur_installable.txt"
                     # "/tmp/${PKGNAME}_deps_aur_installable.txt" conatins locally available dependencies.
                 elif compgen -G "/github/workspace/pkgdir/${aurdep}-*${PKGEXT}" &> $DEBUG_OFF; then
-                    echo "${aurdep}" >> "/tmp/${PKGNAME}_deps_aur_installable.txt"
+                    echo "${aurdep}" | tee -a "/tmp/${PKGNAME}_deps_aur_installable.txt"
                 else
                     echo "${PKGNAME}" | tee -a "/github/workspace/pkglist"
                     add_dep_to_pkglist
-                    echo "${aurdep}" >> "/tmp/${PKGNAME}_deps_aur_installable.txt"
+                    echo "${aurdep}" | tee -a "/tmp/${PKGNAME}_deps_aur_installable.txt"
                 fi
             fi
 
@@ -168,10 +168,10 @@ final_setup() {
 
     cat "/github/workspace/pkglist" &> $DEBUG_OFF
 
-    while read PKGLIST_PKG_SETUP && [[ -n $PKGLIST_PKG_SETUP ]] || [[ -n $PKGLIST_PKG_SETUP ]]
+    while read PKGLIST_PKG_SETUP && [[ -n ${PKGLIST_PKG_SETUP} ]] || [[ -n ${PKGLIST_PKG_SETUP} ]]
     do
         PKGNAME="${PKGLIST_PKG_SETUP}"
-        if [[ $(grep -Fx "$PKGNAME" "/github/workspace/pkglist" &> $DEBUG_OFF; echo $?) ]]; then
+        if [[ $(grep -Fx "${PKGNAME}" "/github/workspace/pkglist" &> $DEBUG_OFF; echo $?) ]]; then
 
         echo -e "::group::${GREEN_COLOR}${BOLD_TEXT}Preparing env to build ${PKGNAME}.${UNSET_COLOR}"
 
@@ -195,17 +195,17 @@ final_setup() {
                 # https://unix.stackexchange.com/a/63663/444404
             echo -e "${ORANGE_COLOR}\"$(xargs<\
                 "/tmp/${PKGNAME}_deps_aur.txt")\" not in repos, neither PKGBUILD provided.${UNSET_COLOR}"
-            echo -e "${ORANGE_COLOR}Skipping $PKGNAME.${UNSET_COLOR}"
+            echo -e "${ORANGE_COLOR}Skipping ${PKGNAME}.${UNSET_COLOR}"
             env_failed "${PKGNAME}" /github/workspace/pkglist
             continue
         fi
 
         echo "::endgroup::"
-        cat "/tmp/${PKGNAME}_deps.txt" >> "/tmp/pkg_deps_assorted.txt"
-        unset PKGNAME && echo "$PKGNAME"
+        cat "/tmp/${PKGNAME}_deps.txt" | tee -a "/tmp/pkg_deps_assorted.txt"
+        unset PKGNAME && echo "${PKGNAME}"
 
         else
-            echo -e "${ORANGE_COLOR}$PKGNAME package not found - skipping.${UNSET_COLOR}"
+            echo -e "${ORANGE_COLOR}${PKGNAME} package not found - skipping.${UNSET_COLOR}"
             continue
         fi
 
