@@ -168,8 +168,9 @@ final_setup() {
 
     cat "/github/workspace/pkglist" &> $DEBUG_OFF
 
-    while read -r PKGNAME && [[ -n $PKGNAME ]] || [[ -n $PKGNAME ]]
+    while read -r PKGLIST_PKG_SETUP && [[ -n $PKGLIST_PKG_SETUP ]] || [[ -n $PKGLIST_PKG_SETUP ]]
     do
+        PKGNAME="${PKGLIST_PKG_SETUP}"
         if [[ ! $(grep -Fx "$PKGNAME" "/github/workspace/pkglist" &> $DEBUG_OFF; echo $?) ]]
         then
             echo -e "${ORANGE_COLOR}$PKGNAME package not found - skipping.${UNSET_COLOR}"
@@ -302,8 +303,9 @@ build_pkg() {
     # https://www.shellcheck.net/wiki/SC2013
     #for PKGNAME in $(cat /github/workspace/pkglist)
 
-    while read -r PKGNAME && [[ -n $PKGNAME ]] || [[ -n $PKGNAME ]]
+    while read -r PKGLIST_PKG_BUILD && [[ -n $PKGLIST_PKG_BUILD ]] || [[ -n $PKGLIST_PKG_BUILD ]]
     do
+        PKGNAME="${PKGLIST_PKG_BUILD}"
         if [[ ! $(grep -Fx "$PKGNAME" "/github/workspace/pkglist" &> $DEBUG_OFF; echo $?) ]]
         then
             echo -e "${ORANGE_COLOR}$PKGNAME package not found - skipping.${UNSET_COLOR}"
