@@ -32,12 +32,12 @@ seg_pkg_files() {
 
     cd "$GITHUB_WORKSPACE/pkgdir/"
 
-    while read -r pkg && [[ -n $pkg ]] || [[ -n $pkg ]]; do
+    while read -r pkg && [[ -n ${pkg} ]] || [[ -n ${pkg} ]]; do
     if compgen -G ${pkg}-[0-9]*.zst &> $DEBUG_OFF; then
         find "$GITHUB_WORKSPACE/pkgdir/" -name "${pkg}-[0-9]*" -delete
-        echo -e "\e[1;33m${pkg} to be updated.\e[0m"
+        echo -e "\e[1;33m$pkg to be updated.\e[0m"
     else
-        echo -e "\e[0;34m${pkg} is new.\e[0m"
+        echo -e "\e[0;34m$pkg is new.\e[0m"
     fi
     unset pkg
     done < "$GITHUB_WORKSPACE"/pkglist
