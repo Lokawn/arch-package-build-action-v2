@@ -16,7 +16,7 @@
 env_failed() {
     # Delete entry "${1}" from pkglist "${2}"
     mv -vf "${2}" "${2}.bak" &> $DEBUG_OFF
-    grep -Fxv "${1}" "${2}.bak" > "${2}"
+    grep -Fxv "${1}" "${2}.bak" | tee "${2}" &> $DEBUG_OFF
     rm -vf "${2}.bak" &> $DEBUG_OFF
     echo -e "${ORANGE_COLOR}${BOLD_TEXT}Failed to build ${1} - skipping.${UNSET_COLOR}"
     # The continue statement skips the remaining commands inside the body of
@@ -164,21 +164,22 @@ create_dependency_list() {
                 # "/tmp/${PKGNAME}_deps_aur.txt" conatins packages neither locally available nor in repositories.
         fi
 
-        rm -vf "/tmp/${PKGNAME}_deps_aur.bak" &> $DEBUG_OFF
-
         if [[ -s "/tmp/${PKGNAME}_deps_aur.txt" ]]; then
             cp -vf "/tmp/${PKGNAME}_deps_aur.txt" "/tmp/${PKGNAME}_deps_aur.bak" &> $DEBUG_OFF
 
             current_deps_aur=0
             while read CHECKPKG_PKG && [[ -n $CHECKPKG_PKG ]] || [[ -n $CHECKPKG_PKG ]]
             do
+            #TODO
                 if ! grep -Fx "${CHECKPKG_PKG}" "/tmp/${PKGNAME}_deps_aur.bak" &> $DEBUG_OFF; then
                     CHECKPKG_PKG=$(head -n $((current_deps_aur + 1)) "/github/workspace/pkglist" | tail -n +$((current_deps_aur + 1)))
                 fi
                 CHECKPKG="${CHECKPKG_PKG}"
                 if pacman -S --noconfirm --needed --color=never "${CHECKPKG}" |& sudo -u buildd tee "/github/workspace/logdir/pacman.log" &> $DEBUG_OFF
                 then
-                    env_failed "${CHECKPKG}" "/tmp/${PKGNAME}_deps_aur.txt"
+                    mv -vf "/tmp/${PKGNAME}_deps_aur.txt" "/tmp/${PKGNAME}_deps_aur.txt.bak" &> $DEBUG_OFF
+                    grep -Fxv "${CHECKPKG}" "/tmp/${PKGNAME}_deps_aur.txt.bak" | tee "/tmp/${PKGNAME}_deps_aur.txt" &> $DEBUG_OFF
+                    rm -vf "/tmp/${PKGNAME}_deps_aur.txt.bak" &> $DEBUG_OFF
                 else continue
                 fi
                 unset CHECKPKG CHECKPKG_PKG
@@ -253,34 +254,9 @@ final_setup() {
 }
 
 seg_aur() {
-
     if [[ -s "/tmp/pkg_deps_assorted.txt" ]]; then
         sort "/tmp/pkg_deps_assorted.txt" | uniq | tee "/tmp/pkg_deps_sorted.txt" &> $DEBUG_OFF
     fi
-
-#    sort "/tmp/pkg_deps_aur_assorted.txt" | uniq | tee "/tmp/pkg_deps_aur_sorted.txt" &> $DEBUG_OFF
-
-#    if [[ -s "/tmp/pkg_deps_aur_sorted.txt" ]]; then
-#        cp "/tmp/pkg_deps_aur.log" "/tmp/pkg_deps_aur.log.bak" &> $DEBUG_OFF
-#        while read -r CHECKPKG && [[ -n $CHECKPKG ]] || [[ -n $CHECKPKG ]]
-#        do
-#            if pacman -S --noconfirm "${PKGNAME}" &> $DEBUG_OFF
-#            then
-#                env_failed "${PKGNAME}" /tmp/pkg_deps_aur.log && continue
-#            fi
-#            unset CHECKPKG
-#        done < "/tmp/pkg_deps_aur.log.bak"
-#        rm -vf "/tmp/pkg_deps_aur.log.bak" &> $DEBUG_OFF
-#    fi
-
-#    if [[ -s "/tmp/pkg_deps_aur_sorted.txt" ]]; then
-#        sudo -u buildd cp -v "pkg_deps_aur_sorted.txt" \
-#            "/github/workspace/logdir/pkg_deps_aur_sorted.log" &> $DEBUG_OFF
-
-            # SC2145: Argument mixes string and array. Use * or separate argument.
-            # https://www.shellcheck.net/wiki/SC2145
-
-#   fi
 }
 
 # Install dependencies for all packages in one go.
