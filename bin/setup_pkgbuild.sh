@@ -91,7 +91,7 @@ create_dependency_list() {
 
     if [[ -s "/tmp/${PKGNAME}_deps.txt" ]]; then
             # Only print lines unique to column 2.
-        comm -13 <(pacman -Slq | sort) <(sort "/tmp/${PKGNAME}_deps.txt") \
+        comm -13 <(pacman -Slq | sort | uniq) <(sort "/tmp/${PKGNAME}_deps.txt" | uniq) \
             | tee "/tmp/${PKGNAME}_deps_aur.txt" &> $DEBUG_OFF
             # "/tmp/${PKGNAME}_deps_aur.txt" contains dependencies not in repositories.
     fi
@@ -101,7 +101,7 @@ create_dependency_list() {
         cp -v "/tmp/${PKGNAME}_deps.txt" "/tmp/${PKGNAME}_deps.bak" &> $DEBUG_OFF
         cp -v "/tmp/${PKGNAME}_deps_aur.txt" "/tmp/${PKGNAME}_deps_aur.bak" &> $DEBUG_OFF
 
-        comm -23 <(sort "/tmp/${PKGNAME}_deps.bak") <(sort "/tmp/${PKGNAME}_deps_aur.txt") \
+        comm -23 <(sort "/tmp/${PKGNAME}_deps.bak" | uniq) <(sort "/tmp/${PKGNAME}_deps_aur.txt" | uniq) \
             | tee "/tmp/${PKGNAME}_deps.txt" &> $DEBUG_OFF
             # "/tmp/${PKGNAME}_deps.txt" contains only packages present in repositories.
 
@@ -156,7 +156,7 @@ create_dependency_list() {
 
             # Since column 2 should not contain any unique lines "-3" is used (so -2 not needed).
             # Only print lines unique to column 1.
-            comm -3 <(sort "/tmp/${PKGNAME}_deps_aur.bak") <(sort "/tmp/${PKGNAME}_deps_aur_installable.txt") \
+            comm -3 <(sort "/tmp/${PKGNAME}_deps_aur.bak" | uniq) <(sort "/tmp/${PKGNAME}_deps_aur_installable.txt" | uniq) \
                 | tee "/tmp/${PKGNAME}_deps_aur.txt" &> $DEBUG_OFF
                 # "/tmp/${PKGNAME}_deps_aur.txt" conatins packages neither locally available nor in repositories.
         fi
@@ -253,10 +253,10 @@ final_setup() {
 seg_aur() {
 
     if [[ -s "/tmp/pkg_deps_assorted.txt" ]]; then
-        sort "/tmp/pkg_deps_assorted.txt" | tee "/tmp/pkg_deps_sorted.txt" &> $DEBUG_OFF
+        sort "/tmp/pkg_deps_assorted.txt" | uniq | tee "/tmp/pkg_deps_sorted.txt" &> $DEBUG_OFF
     fi
 
-#    sort "/tmp/pkg_deps_aur_assorted.txt" | tee "/tmp/pkg_deps_aur_sorted.txt" &> $DEBUG_OFF
+#    sort "/tmp/pkg_deps_aur_assorted.txt" | uniq | tee "/tmp/pkg_deps_aur_sorted.txt" &> $DEBUG_OFF
 
 #    if [[ -s "/tmp/pkg_deps_aur_sorted.txt" ]]; then
 #        cp "/tmp/pkg_deps_aur.log" "/tmp/pkg_deps_aur.log.bak" &> $DEBUG_OFF
