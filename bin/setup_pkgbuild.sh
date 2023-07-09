@@ -105,39 +105,42 @@ create_dependency_list() {
             | tee "/tmp/${PKGNAME}_deps.txt" &> $DEBUG_OFF
             # "/tmp/${PKGNAME}_deps.txt" contains only packages present in repositories.
 
+        rm -vf "/tmp/${PKGNAME}_deps.bak" &> $DEBUG_OFF
+
         current_run_aurdep=0
-        while read aurdep && [[ -n "${aurdep}" ]] || [[ -n "${aurdep}" ]]
+        while read aurdep && [[ -n "${aurdep}" ]] || [[ -n "${aurdep}" ]] #from "/tmp/${PKGNAME}_deps_aur.txt"
         do
+        #TODO: use case statement instead of using if twice.
             if ! grep -Fx "${aurdep}" "/tmp/${PKGNAME}_deps_aur.txt" &> $DEBUG_OFF; then
                     aurdep=$(head -n $(($current_run_aurdep + 1)) "/tmp/${PKGNAME}_deps_aur.txt" | tail -n +$(($current_run_aurdep + 1)))
             fi
 
             if grep -Fx "${aurdep}" "/tmp/${PKGNAME}_deps_aur.txt" &> $DEBUG_OFF; then
-            add_dep_to_pkglist() {
-                local aur_lineno pkg_lineno
-                aur_lineno=$(grep -nFx "${aurdep}" "/github/workspace/pkglist" | cut -d ":" -f1)
-                pkg_lineno=$(grep -nFx "${PKGNAME}" "/github/workspace/pkglist" | cut -d ":" -f1)
-                if [[ "$aur_lineno" > "$pkg_lineno" ]]
-                then
-                    cp -vf /github/workspace/pkglist /github/workspace/pkglist.bak &> $DEBUG_OFF
-                    grep -Fxv "${PKGNAME}" "/github/workspace/pkglist.bak" | tee "/github/workspace/pkglist" &> $DEBUG_OFF
-                    echo "${PKGNAME}" | tee -a "/github/workspace/pkglist" &> $DEBUG_OFF
-                fi
-            }
+                add_dep_to_pkglist() {
+                    local aur_lineno pkg_lineno
+                    aur_lineno=$(grep -nFx "${aurdep}" "/github/workspace/pkglist" | cut -d ":" -f1)
+                    pkg_lineno=$(grep -nFx "${PKGNAME}" "/github/workspace/pkglist" | cut -d ":" -f1)
+                    if [[ "$aur_lineno" > "$pkg_lineno" ]]
+                    then
+                        cp -vf /github/workspace/pkglist /github/workspace/pkglist.bak &> $DEBUG_OFF
+                        grep -Fxv "${PKGNAME}" "/github/workspace/pkglist.bak" | tee "/github/workspace/pkglist" &> $DEBUG_OFF
+                        echo "${PKGNAME}" | tee -a "/github/workspace/pkglist" &> $DEBUG_OFF
+                    fi
+                }
 
-            if [[ -d "/github/workspace/pkgs/${aurdep}" ]]; then
-                if grep -Fx "${aurdep}" "/github/workspace/pkglist" &> $DEBUG_OFF; then
-                    add_dep_to_pkglist
-                    echo "${aurdep}" | tee -a "/tmp/${PKGNAME}_deps_aur_installable.txt"
-                    # "/tmp/${PKGNAME}_deps_aur_installable.txt" conatins locally available dependencies.
-                elif compgen -G "/github/workspace/pkgdir/${aurdep}-*${PKGEXT}" &> $DEBUG_OFF; then
-                    echo "${aurdep}" | tee -a "/tmp/${PKGNAME}_deps_aur_installable.txt"
-                else
-                    echo "${PKGNAME}" | tee -a "/github/workspace/pkglist"
-                    add_dep_to_pkglist
-                    echo "${aurdep}" | tee -a "/tmp/${PKGNAME}_deps_aur_installable.txt"
+                if [[ -d "/github/workspace/pkgs/${aurdep}" ]]; then
+                    if grep -Fx "${aurdep}" "/github/workspace/pkglist" &> $DEBUG_OFF; then
+                        add_dep_to_pkglist
+                        echo "${aurdep}" | tee -a "/tmp/${PKGNAME}_deps_aur_installable.txt"
+                        # "/tmp/${PKGNAME}_deps_aur_installable.txt" conatins locally available dependencies.
+                    elif compgen -G "/github/workspace/pkgdir/${aurdep}-*${PKGEXT}" &> $DEBUG_OFF; then
+                        echo "${aurdep}" | tee -a "/tmp/${PKGNAME}_deps_aur_installable.txt"
+                    else
+                        echo "${PKGNAME}" | tee -a "/github/workspace/pkglist"
+                        add_dep_to_pkglist
+                        echo "${aurdep}" | tee -a "/tmp/${PKGNAME}_deps_aur_installable.txt"
+                    fi
                 fi
-            fi
 
             unset aurdep
             current_run_aurdep=$(($current_run_aurdep + 1))
@@ -161,10 +164,9 @@ create_dependency_list() {
                 # "/tmp/${PKGNAME}_deps_aur.txt" conatins packages neither locally available nor in repositories.
         fi
 
-        rm -vf "/tmp/${PKGNAME}_deps_aur.bak" "/tmp/${PKGNAME}_deps.bak" &> $DEBUG_OFF
+        rm -vf "/tmp/${PKGNAME}_deps_aur.bak" &> $DEBUG_OFF
 
         if [[ -s "/tmp/${PKGNAME}_deps_aur.txt" ]]; then
-
             cp -vf "/tmp/${PKGNAME}_deps_aur.txt" "/tmp/${PKGNAME}_deps_aur.bak" &> $DEBUG_OFF
 
             current_deps_aur=0
@@ -173,7 +175,7 @@ create_dependency_list() {
                 if ! grep -Fx "${CHECKPKG_PKG}" "/tmp/${PKGNAME}_deps_aur.bak" &> $DEBUG_OFF; then
                     CHECKPKG_PKG=$(head -n $((current_deps_aur + 1)) "/github/workspace/pkglist" | tail -n +$((current_deps_aur + 1)))
                 fi
-                CHECKPKG_PKG="${CHECKPKG}"
+                CHECKPKG="${CHECKPKG_PKG}"
                 if pacman -S --noconfirm --needed --color=never "${CHECKPKG}" |& sudo -u buildd tee "/github/workspace/logdir/pacman.log" &> $DEBUG_OFF
                 then
                     env_failed "${CHECKPKG}" "/tmp/${PKGNAME}_deps_aur.txt"
