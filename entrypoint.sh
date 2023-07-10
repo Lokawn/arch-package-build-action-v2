@@ -30,20 +30,17 @@ else
     export MAKEFLAGS
 fi
 
-cat "/github/workspace/pkglist" &> $DEBUG_OFF
+# Remove empty lines, trailing and leading spaces and tabs from pkglist, enable comments in pkglist
+sed -e '/^[ \t]*$/d' -e 's/^[ \t]*//' -e 's/[ \t]*$//' -e '/^#/d' -i /github/workspace/pkglist
 
 # setup_pkgbuild.sh
 final_setup
-
-cat "/github/workspace/pkglist" &> $DEBUG_OFF
 
 seg_aur
 
 for i in {1..5}
 do install_dependencies && break || sleep 5
 done
-
-cat "/github/workspace/pkglist" &> $DEBUG_OFF
 
 build_pkg
 

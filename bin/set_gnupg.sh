@@ -7,7 +7,6 @@ fi
 echo "keyserver hkps://keys.openpgp.org" | \
     tee "/github/home/.gnupg/gpg.conf" &> $DEBUG_OFF
 
-
 import_sign() {
 
     sign_file() {

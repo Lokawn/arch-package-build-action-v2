@@ -13,12 +13,13 @@
 #12. build_pkg
 
 # In case environment preparation fails run this function.
+# Delete entry "${1}" from pkglist "${2}"
 env_failed() {
-    # Delete entry "${1}" from pkglist "${2}"
     mv -vf "${2}" "${2}.bak" &> $DEBUG_OFF
     grep -Fxv "${1}" "${2}.bak" | tee "${2}" &> $DEBUG_OFF
     rm -vf "${2}.bak" &> $DEBUG_OFF
     echo -e "${ORANGE_COLOR}${BOLD_TEXT}Failed to build ${1} - skipping.${UNSET_COLOR}"
+
     # The continue statement skips the remaining commands inside the body of
     # the enclosing loop for the current iteration and passes program control
     # to the next iteration of the loop.
@@ -142,9 +143,8 @@ create_dependency_list() {
                     fi
                 fi
 
-            unset aurdep
-            current_run_aurdep=$(($current_run_aurdep + 1))
-
+                unset aurdep
+                current_run_aurdep=$(($current_run_aurdep + 1))
             else continue
             fi
 
@@ -199,8 +199,6 @@ final_setup() {
     # https://www.shellcheck.net/wiki/SC2013
     #for PKGNAME in $(cat /github/workspace/pkglist)
 
-    cat "/github/workspace/pkglist" &> $DEBUG_OFF
-
     current_pkgsetup=0
     while read PKGLIST_PKG_SETUP && [[ -n ${PKGLIST_PKG_SETUP} ]] || [[ -n ${PKGLIST_PKG_SETUP} ]]
     do
@@ -245,8 +243,6 @@ final_setup() {
             echo -e "${ORANGE_COLOR}${PKGNAME} package not found - skipping.${UNSET_COLOR}"
             continue
         fi
-
-        cat "/github/workspace/pkglist" &> $DEBUG_OFF
         current_pkgsetup=$(($current_pkgsetup + 1))
 
     done < "/github/workspace/pkglist"
@@ -336,23 +332,23 @@ build_pkg() {
             echo -e "${ORANGE_COLOR}${BOLD_TEXT}PWD='${PWD}'${UNSET_COLOR}"
 
             if [[ -s "/tmp/${PKGNAME}_deps_aur_installable.txt" ]]; then
-            current_build_aurdep=0
-            while read aurdep && [[ -n "${aurdep}" ]] || [[ -n "${aurdep}" ]]
-            do
-                if ! grep -Fx "${aurdep}" "/tmp/${PKGNAME}_deps_aur_installable.txt" &> $DEBUG_OFF; then
-                    aurdep=$(head -n $(($current_build_aurdep + 1)) "/tmp/${PKGNAME}_deps_aur_installable.txt" | tail -n +$(($current_build_aurdep + 1)))
-                fi
-
-                for aurdeppkg in '/github/workspace/pkgdir/'"${aurdep}"-*"${PKGEXT}"
+                current_build_aurdep=0
+                while read aurdep && [[ -n "${aurdep}" ]] || [[ -n "${aurdep}" ]]
                 do
-                    echo -e "${ORANGE_COLOR}Installing ${aurdep}.${UNSET_COLOR}"
-                    pacman -Uv --noconfirm "${aurdeppkg}" \
-                        |& sudo -u buildd tee "/github/workspace/logdir/pacman.log" &> $DEBUG_OFF
-                done
-                unset aurdep aurdeppkg
-                current_build_aurdep=$(($current_build_aurdep + 1))
-            done < "/tmp/${PKGNAME}_deps_aur_installable.txt"
-            unset current_build_aurdep
+                    if ! grep -Fx "${aurdep}" "/tmp/${PKGNAME}_deps_aur_installable.txt" &> $DEBUG_OFF; then
+                        aurdep=$(head -n $(($current_build_aurdep + 1)) "/tmp/${PKGNAME}_deps_aur_installable.txt" | tail -n +$(($current_build_aurdep + 1)))
+                    fi
+
+                    for aurdeppkg in '/github/workspace/pkgdir/'"${aurdep}"-*"${PKGEXT}"
+                    do
+                        echo -e "${ORANGE_COLOR}Installing ${aurdep}.${UNSET_COLOR}"
+                        pacman -Uv --noconfirm "${aurdeppkg}" \
+                            |& sudo -u buildd tee "/github/workspace/logdir/pacman.log" &> $DEBUG_OFF
+                    done
+                    unset aurdep aurdeppkg
+                    current_build_aurdep=$(($current_build_aurdep + 1))
+                done < "/tmp/${PKGNAME}_deps_aur_installable.txt"
+                unset current_build_aurdep
             fi
 
             if echo -e "${GREEN_COLOR}${BOLD_TEXT}Building ${PKGNAME}.${UNSET_COLOR}" && \
@@ -386,12 +382,10 @@ build_pkg() {
             fi
             echo "::endgroup::"
             unset PKGNAME PKGLIST_PKG_BUILD
-
         else
             echo -e "${ORANGE_COLOR}$PKGNAME package not found - skipping.${UNSET_COLOR}"
             continue
         fi
-
     done < "/github/workspace/pkglist"
     unset current_pkgbuild
 }
