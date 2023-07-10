@@ -30,9 +30,6 @@ else
     export MAKEFLAGS
 fi
 
-# Remove empty lines, trailing and leading spaces and tabs from pkglist, enable comments in pkglist
-sed -e '/^[ \t]*$/d' -e 's/^[ \t]*//' -e 's/[ \t]*$//' -e '/^#/d' -i /github/workspace/pkglist
-
 # setup_pkgbuild.sh
 final_setup
 
