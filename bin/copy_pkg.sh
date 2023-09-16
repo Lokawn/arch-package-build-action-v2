@@ -1,4 +1,7 @@
 mkdir -vp "$GITHUB_WORKSPACE"/{pkgdir,logdir} &> $DEBUG_OFF
+[[ `echo $?` -ne 0 ]] &&\
+    echo -e "${RED_COLOR}${BOLD_TEXT}Failed to make 'logdir', 'pkgdir' - aborting.{UNSET_COLOR}" &&\
+    exit 1
 
 # Copy package files from sync directory to PKGDIR.
 copy_pkg_files() {
