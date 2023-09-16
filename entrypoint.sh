@@ -36,8 +36,17 @@ final_setup
 seg_aur
 
 for i in {1..5}
-do install_dependencies && break || sleep 5
-done
+do
+    if ! install_dependencies &> $DEBUG_OFF
+    then
+        if [[ $i -le 4 ]]; then
+            (echo -e "${RED_COLOR}${BOLD_TEXT}Pacman database update failed - retrying.${UNSET_COLOR}" && exit 1)
+        elif [[ $i == 5 ]]; then
+            (echo -e "${RED_COLOR}${BOLD_TEXT}Pacman database update failed, 5 times - aborting.${UNSET_COLOR}" && exit 1)
+        fi || (exit 1)
+    fi && break || (exit 1)
+done || exit 1
+#TODO: If multiple retries fail, then try using different mirrors.
 
 build_pkg
 
