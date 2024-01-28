@@ -237,7 +237,7 @@ final_setup() {
             fi
 
             echo "::endgroup::"
-            cat "/tmp/${PKGNAME}_deps.txt" | tee -a "/tmp/pkg_deps_assorted.txt"
+            cat "/tmp/${PKGNAME}_deps.txt" >> "/tmp/pkg_deps_assorted.txt"
             unset PKGNAME PKGLIST_PKG_SETUP
         else
             echo -e "${ORANGE_COLOR}${PKGNAME} package not found - skipping.${UNSET_COLOR}"
