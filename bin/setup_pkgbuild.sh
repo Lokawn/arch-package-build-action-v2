@@ -18,7 +18,7 @@ env_failed() {
     mv -vf "${2}" "${2}.bak" &> $DEBUG_OFF
     grep -Fxv "${1}" "${2}.bak" | tee "${2}" &> $DEBUG_OFF
     rm -vf "${2}.bak" &> $DEBUG_OFF
-    echo -e "${ORANGE_COLOR}${BOLD_TEXT}Failed to build ${1} - skipping.${UNSET_COLOR}"
+    echo -e "${ORANGE_COLOR}Failed to build ${1} - skipping.${UNSET_COLOR}"
 
     # The continue statement skips the remaining commands inside the body of
     # the enclosing loop for the current iteration and passes program control
@@ -28,12 +28,12 @@ env_failed() {
 ###### Inital setup
 initial_setup() {
     if [[ ! -d "${pkgbuild_dir}" ]]; then
-        echo -e "${ORANGE_COLOR}${BOLD_TEXT}${pkgbuild_dir} should be a directory.${UNSET_COLOR}"
+        echo -e "${ORANGE_COLOR}${pkgbuild_dir} should be a directory.${UNSET_COLOR}"
         env_failed "${PKGNAME}" /github/workspace/pkglist && return 1
     fi
 
     if [[ ! -e "${pkgbuild_dir}/PKGBUILD" ]]; then
-        echo -e "${ORANGE_COLOR}${BOLD_TEXT}${pkgbuild_dir} does not contain a PKGBUILD file.${UNSET_COLOR}"
+        echo -e "${ORANGE_COLOR}${pkgbuild_dir} does not contain a PKGBUILD file.${UNSET_COLOR}"
         env_failed "${PKGNAME}" /github/workspace/pkglist && return 1
     fi
 }
@@ -209,7 +209,7 @@ final_setup() {
         PKGNAME="${PKGLIST_PKG_SETUP}"
         if grep -Fx "${PKGNAME}" "/github/workspace/pkglist" &> $DEBUG_OFF; then
 
-            echo -e "::group::${GREEN_COLOR}${BOLD_TEXT}Preparing env to build ${PKGNAME}.${UNSET_COLOR}"
+            echo -e "::group::${GREEN_COLOR}Preparing env to build ${PKGNAME}.${UNSET_COLOR}"
 
             # nicely cleans up path, ie.
             # ///dsq/dqsdsq/my-package//// -> /dsq/dqsdsq/my-package
@@ -218,7 +218,7 @@ final_setup() {
             initial_setup || continue
 
             cd "${pkgbuild_dir}"
-            echo -e "${ORANGE_COLOR}${BOLD_TEXT}PWD='${PWD}'${UNSET_COLOR}"
+            echo -e "${ORANGE_COLOR}PWD='${PWD}'${UNSET_COLOR}"
 
             create_srcinfo || continue
 
@@ -261,17 +261,17 @@ install_dependencies() {
             namcap git audit diffutils < "/tmp/pkg_deps_sorted.txt" \
             |& sudo -u buildd tee -a "/github/workspace/logdir/pacman.log" &> $DEBUG_OFF
     then
-        echo -e "${RED_COLOR}${BOLD_TEXT}Failed to install dependencies - aborting.${UNSET_COLOR}"
+        echo -e "${RED_COLOR}Failed to install dependencies - aborting.${UNSET_COLOR}"
         exit 1
     else
         for alldeps in namcap git diff auditd; do
             if ! command -v "${alldeps}" &> $DEBUG_OFF
             then
-                echo -e "${RED_COLOR}${BOLD_TEXT}${alldeps} not in '$PATH' - aborting.${UNSET_COLOR}"
+                echo -e "${RED_COLOR}${alldeps} not in '$PATH' - aborting.${UNSET_COLOR}"
                 exit 1
             fi
         done
-        echo -e "${BLUE_COLOR}${BOLD_TEXT}Dependencies installed.${UNSET_COLOR}"
+        echo -e "${BLUE_COLOR}Dependencies installed.${UNSET_COLOR}"
     fi
 }
 
@@ -279,7 +279,7 @@ namcap_pkg() {
     if ! namcap "${1}" |& sudo -u buildd \
         tee "/github/workspace/logdir/namcap_${PKGNAME}.log" &> $DEBUG_OFF
     then
-        echo -e "${ORANGE_COLOR}${BOLD_TEXT}namcap ${1} failed - skipping.${UNSET_COLOR}"
+        echo -e "${ORANGE_COLOR}namcap ${1} failed - skipping.${UNSET_COLOR}"
         return 1
     fi
 }
@@ -324,12 +324,12 @@ build_pkg() {
         PKGNAME="${PKGLIST_PKG_BUILD}"
         if grep -Fx "${PKGNAME}" "/github/workspace/pkglist" &> $DEBUG_OFF; then
 
-            echo -e "::group::${GREEN_COLOR}${BOLD_TEXT}Packaging ${PKGNAME}.${UNSET_COLOR}"
+            echo -e "::group::${GREEN_COLOR}Packaging ${PKGNAME}.${UNSET_COLOR}"
 
             pkgbuild_dir=$(readlink "/github/workspace/pkgs/${PKGNAME}" -f)
 
             cd "${pkgbuild_dir}"
-            echo -e "${ORANGE_COLOR}${BOLD_TEXT}PWD='${PWD}'${UNSET_COLOR}"
+            echo -e "${ORANGE_COLOR}PWD='${PWD}'${UNSET_COLOR}"
 
             if [[ -s "/tmp/${PKGNAME}_deps_aur_installable.txt" ]]; then
                 current_build_aurdep=0
@@ -351,7 +351,7 @@ build_pkg() {
                 unset current_build_aurdep
             fi
 
-            if echo -e "${GREEN_COLOR}${BOLD_TEXT}Building ${PKGNAME}.${UNSET_COLOR}" && \
+            if echo -e "${GREEN_COLOR}Building ${PKGNAME}.${UNSET_COLOR}" && \
                 sudo -u buildd makepkg --syncdeps --noconfirm \
                     |& sudo -u buildd tee "/github/workspace/logdir/build_${PKGNAME}.log" &> $DEBUG_OFF
                 # SC2024: sudo doesn't affect redirects.
@@ -372,12 +372,12 @@ build_pkg() {
                         mv -v "${pkg}"* "/github/workspace/pkgdir" &> $DEBUG_OFF
                         echo "Package file moved to PKGDIR."
                     else
-                        echo -e "${ORANGE_COLOR}${BOLD_TEXT}Failed to build ${PKGNAME} - skipping.${UNSET_COLOR}"
+                        echo -e "${ORANGE_COLOR}Failed to build ${PKGNAME} - skipping.${UNSET_COLOR}"
                         continue
                     fi
                 done
             else
-                echo -e "${ORANGE_COLOR}${BOLD_TEXT}Failed to build ${PKGNAME} - skipping.${UNSET_COLOR}"
+                echo -e "${ORANGE_COLOR}Failed to build ${PKGNAME} - skipping.${UNSET_COLOR}"
                 continue
             fi
             echo "::endgroup::"

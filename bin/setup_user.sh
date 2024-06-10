@@ -8,7 +8,7 @@ echo "buildd ALL=(ALL) NOPASSWD: ALL" | \
     tee -a "/etc/sudoers" &> $DEBUG_OFF
 
     # Still the owner of files in /github/home is 1001:123
-echo -e "${BLUE_COLOR}${BOLD_TEXT}user 'buildd' created.${UNSET_COLOR}"
+echo -e "${BLUE_COLOR}user 'buildd' created.${UNSET_COLOR}"
 
 # Still the owner of files is 1001:123
 # '/github/workspace' is mounted as a volume
@@ -29,9 +29,9 @@ if [[ -f /tmp/ownership.log ]]; then
     sudo -u buildd cp -v "/tmp/ownership.log"\
         "/github/workspace/logdir/ownership.log" &> $DEBUG_OFF
 else
-    echo -e "${RED_COLOR}${BOLD_TEXT}/tmp/ownership.log doesn't exist.${UNSET_COLOR}"
+    echo -e "${RED_COLOR}/tmp/ownership.log doesn't exist.${UNSET_COLOR}"
     exit 1
 fi
 
-echo -e "${BLUE_COLOR}${BOLD_TEXT}Ownership of '/github/home' & \
+echo -e "${BLUE_COLOR}Ownership of '/github/home' & \
 '/github/workspace' changed to user 'buildd'.${UNSET_COLOR}"

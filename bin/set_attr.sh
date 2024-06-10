@@ -1,18 +1,18 @@
 if ! ownerWork="$(getfacl -an "/github/workspace" | grep owner | awk '{print $3}')"; then
-    echo -e "${RED_COLOR}${BOLD_TEXT}Unable to set ownerWork.${UNSET_COLOR}"
+    echo -e "${RED_COLOR}Unable to set ownerWork.${UNSET_COLOR}"
     exit 1
 fi
 
 if ! groupWork="$(getfacl -an "/github/workspace" | grep group | awk '{print $3}')"; then
-    echo -e "${RED_COLOR}${BOLD_TEXT}Unable to set groupWork.${UNSET_COLOR}"
+    echo -e "${RED_COLOR}Unable to set groupWork.${UNSET_COLOR}"
     exit 1
 fi
 if ! ownerHome="$(getfacl -an "/github/home" | grep owner | awk '{print $3}')"; then
-    echo -e "${RED_COLOR}${BOLD_TEXT}Unable to set ownerHome.${UNSET_COLOR}"
+    echo -e "${RED_COLOR}Unable to set ownerHome.${UNSET_COLOR}"
     exit 1
 fi
 if ! groupHome="$(getfacl -an "/github/home" | grep group | awk '{print $3}')"; then
-    echo -e "${RED_COLOR}${BOLD_TEXT}Unable to set groupHome.${UNSET_COLOR}"
+    echo -e "${RED_COLOR}Unable to set groupHome.${UNSET_COLOR}"
     exit 1
 fi
 
@@ -37,5 +37,5 @@ reset_attr() {
     chown -R "${ownerHome}":"${groupHome}" "/github/home" &> $DEBUG_OFF
     #echo "::endgroup::"
 
-    echo -e "${BLUE_COLOR}${BOLD_TEXT}Ownership of '/github' changed to runner:docker.${UNSET_COLOR}"
+    echo -e "${BLUE_COLOR}Ownership of '/github' changed to runner:docker.${UNSET_COLOR}"
 }

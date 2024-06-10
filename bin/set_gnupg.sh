@@ -1,5 +1,5 @@
 if ! mkdir -vp "/github/home/.gnupg/"; then
-    echo -e "${RED_COLOR}${BOLD_TEXT}Failed to make /github/home/.gnupg/.${UNSET_COLOR}"
+    echo -e "${RED_COLOR}Failed to make /github/home/.gnupg/.${UNSET_COLOR}"
     exit 1
 fi
 
@@ -16,9 +16,9 @@ import_sign() {
 
         if sudo -u buildd gpg --verify "${1}.sig" "${1}" &> $DEBUG_OFF
         then
-            echo -e "${BLUE_COLOR}${BOLD_TEXT}Signed ${1}.${UNSET_COLOR}"
+            echo -e "${BLUE_COLOR}Signed ${1}.${UNSET_COLOR}"
         else
-            echo -e "${ORANGE_COLOR}${BOLD_TEXT}Failed to Sign ${1}.${UNSET_COLOR}"
+            echo -e "${ORANGE_COLOR}Failed to Sign ${1}.${UNSET_COLOR}"
         fi
     }
 
@@ -40,11 +40,11 @@ import_sign() {
         then
             sign_file "${1}"
         else
-            echo -e "${RED_COLOR}${BOLD_TEXT}Failed to import private key, not signing ${1}.${UNSET_COLOR}"
+            echo -e "${RED_COLOR}Failed to import private key, not signing ${1}.${UNSET_COLOR}"
             disable_package_verify
         fi
     else
-        echo -e "${ORANGE_COLOR}${BOLD_TEXT}No Secret Key present, not signing ${1}.${UNSET_COLOR}"
+        echo -e "${ORANGE_COLOR}No Secret Key present, not signing ${1}.${UNSET_COLOR}"
         disable_package_verify
     fi
 }

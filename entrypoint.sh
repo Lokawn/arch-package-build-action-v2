@@ -25,7 +25,7 @@ source "/github/workspace/action/bin/setup_repo.sh"
 source /etc/makepkg.conf # get PKGEXT
 
 if ! MAKEFLAGS=-j$(nproc); then
-    echo -e "${ORANGE_COLOR}${BOLD_TEXT}Failed to set thread cound in makepkg.${UNSET_COLOR}"
+    echo -e "${ORANGE_COLOR}Failed to set thread cound in makepkg.${UNSET_COLOR}"
 else
     export MAKEFLAGS
 fi
@@ -40,9 +40,9 @@ do
     if ! install_dependencies &> $DEBUG_OFF
     then
         if [[ $i -le 4 ]]; then
-            (echo -e "${RED_COLOR}${BOLD_TEXT}Pacman database update failed - retrying.${UNSET_COLOR}" && exit 1)
+            (echo -e "${RED_COLOR}Pacman database update failed - retrying.${UNSET_COLOR}" && exit 1)
         elif [[ $i == 5 ]]; then
-            (echo -e "${RED_COLOR}${BOLD_TEXT}Pacman database update failed, 5 times - aborting.${UNSET_COLOR}" && exit 1)
+            (echo -e "${RED_COLOR}Pacman database update failed, 5 times - aborting.${UNSET_COLOR}" && exit 1)
         fi || (exit 1)
     fi && break || (exit 1)
 done || exit 1
