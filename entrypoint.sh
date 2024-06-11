@@ -14,6 +14,7 @@ mv -vf /github/workspace/action/config/{makepkg.conf,pacman.conf} /etc/  &> $DEB
 
 source "/github/workspace/action/bin/set_gnupg.sh"
 source "/github/workspace/action/bin/set_attr.sh"
+source "/github/workspace/action/bin/copy_pkg.sh"
 
 source "/github/workspace/action/bin/setup_pacman.sh"
 source "/github/workspace/action/bin/setup_user.sh"
@@ -32,6 +33,7 @@ fi
 
 # setup_pkgbuild.sh
 final_setup
+seg_pkg_files
 
 seg_aur
 

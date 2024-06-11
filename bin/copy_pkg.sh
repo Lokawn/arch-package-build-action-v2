@@ -20,8 +20,8 @@ copy_pkg_files() {
         continue
 
         cp -v "$i"{,.sig} "${GITHUB_WORKSPACE}/pkgdir/" &> $DEBUG_OFF
-        if [[ -n "$ENABLE_DEBUG" && "$ENABLE_DEBUG" = false \
-          || -z "$ENABLE_DEBUG" ]]; then
+        if [[ -n "${RUNNER_DEBUG}" && "${RUNNER_DEBUG}" = 0 \
+          || -z "${RUNNER_DEBUG}" ]]; then
             echo -e "\e[0;34mCopied ${package_file} to '${GITHUB_WORKSPACE}/pkgdir'.\e[0m"
         fi
     done
@@ -43,7 +43,7 @@ seg_pkg_files() {
         echo -e "\e[0;34m$pkg is new.\e[0m"
     fi
     unset pkg
-    done < "$GITHUB_WORKSPACE"/pkglist
+    done < "$GITHUB_WORKSPACE"/pkglist_SRCINFO
 
     echo "::endgroup::"
 }

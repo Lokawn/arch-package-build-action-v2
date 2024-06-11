@@ -48,6 +48,14 @@ create_srcinfo() {
     fi
 }
 
+create_pkglist_SRCINFO() {
+    if ! grep -E 'pkgname' .SRCINFO | sed -e 's/pkgname = //' >> /github/workspace/pkglist_SRCINFO
+    then
+        echo -e "${ORANGE_COLOR}Failed to parse ${PKGNAME}/.SRCINFO - skipping.${UNSET_COLOR}"
+        env_failed "${PKGNAME}" /github/workspace/pkglist && return 1
+    fi
+}
+
 import_public_keys() {
 # Exit status for the function will be 0 if there are no errors.
     if grep -E 'validpgpkeys' .SRCINFO  &> $DEBUG_OFF
@@ -218,9 +226,12 @@ final_setup() {
             initial_setup || continue
 
             cd "${pkgbuild_dir}"
-            echo -e "${ORANGE_COLOR}PWD='${PWD}'${UNSET_COLOR}"
+
+            # Only for testing.
+            # echo -e "${ORANGE_COLOR}PWD='${PWD}'${UNSET_COLOR}"
 
             create_srcinfo || continue
+            create_pkglist_SRCINFO || continue
 
             import_public_keys || continue
 
